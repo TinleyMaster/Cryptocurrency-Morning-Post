@@ -1,0 +1,7 @@
+requests
+PyYAML
+Jinja2
+pydantic>=2,<3
+python-dateutil
+xpoz
+pytest

@@ -1,0 +1,41 @@
+﻿groups:
+  - group_name: "海外权威创始&机构大佬"
+    members:
+      - username: "saylor"
+        enabled: true
+        role: "MicroStrategy董事长"
+        category: "机构 / BTC叙事"
+      - username: "brian_armstrong"
+        enabled: true
+        role: "Coinbase CEO"
+        category: "合规 / 美国监管"
+      - username: "VitalikButerin"
+        enabled: true
+        role: "以太坊联合创始人"
+        category: "技术 / 公链"
+
+  - group_name: "海外交易与数据分析KOL"
+    members:
+      - username: "CryptoMichNL"
+        enabled: true
+        role: "头部技术分析师"
+        category: "技术分析"
+      - username: "CredibleCrypto"
+        enabled: true
+        role: "周期技术分析师"
+        category: "技术分析 / 周期"
+
+  - group_name: "华语头部大V"
+    members:
+      - username: "PhyrexNi"
+        enabled: true
+        role: "华语链上分析者"
+        category: "链上数据 / 公链生态"
+      - username: "Wuhuoqiu"
+        enabled: true
+        role: "老牌中文全周期博主"
+        category: "交易 / DeFi"
+      - username: "0xTodd"
+        enabled: true
+        role: "海外华人链上分析师"
+        category: "华语 / 链上数据"

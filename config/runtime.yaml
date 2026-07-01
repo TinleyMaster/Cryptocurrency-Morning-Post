@@ -1,0 +1,17 @@
+﻿timezone: Asia/Shanghai
+language: zh-CN
+
+schedule:
+  market_cron: "5 0 * * *"
+  kol_cron: "10 2 * * *"
+
+output:
+  base_dir: reports
+  market_dir: reports/market
+  kol_dir: reports/kol
+  deepread_dir: reports/deepread
+  base_payload_dir: reports/base_payload
+
+defaults:
+  market_report_name: "加密市场早报"
+  kol_report_name: "加密KOL过去24小时监控报告"

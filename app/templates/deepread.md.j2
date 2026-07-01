@@ -1,0 +1,22 @@
+# {{ title }}
+
+> 来源报告：`{{ source_report }}`
+> 推文条数：`{{ tweets | length }}`
+
+{% for tweet in tweets %}
+## {{ loop.index }}. {{ tweet.display_name }}
+
+### 原帖信息
+- 链接：`{{ tweet.tweet_url }}`
+- 发布时间：`{{ tweet.created_at_display }}`
+- 互动：`{{ tweet.like_count }}` 赞 / `{{ tweet.retweet_count }}` 转发 / `{{ tweet.reply_count }}` 回复 / `{{ tweet.quote_count }}` 引用
+
+### 原文
+```text
+{{ tweet.text }}
+```
+
+### 逻辑拆解
+- {{ tweet.notes }}
+
+{% endfor %}

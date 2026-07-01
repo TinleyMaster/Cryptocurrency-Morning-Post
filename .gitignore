@@ -1,0 +1,26 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+.env
+.env.*
+
+# Reports and runtime artifacts
+reports/market/*.md
+reports/kol/*.md
+reports/deepread/*.md
+reports/base_payload/*.json
+
+# OS / IDE
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Debug artifacts
+.dbg/
+debug-feishu-publish-missing.md

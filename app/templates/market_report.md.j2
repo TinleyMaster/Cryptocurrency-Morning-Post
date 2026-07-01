@@ -1,0 +1,104 @@
+# {{ title }}
+
+> 生成时间：`{{ generated_at }}`
+> 数据说明：当前为云上脚手架样例输出，后续将替换为真实 API 数据
+
+## 今日一句话
+
+- {{ one_liner }}
+
+## 今日大盘概览
+
+- 总市值：`{{ snapshot.total_market_cap }}`
+- BTC 主导率：`{{ snapshot.btc_dominance }}`
+- 情绪：`{{ snapshot.sentiment }}`
+- 概括：{{ snapshot.summary }}
+
+## DefiLlama 资金监控
+
+### 首页总览
+
+- 稳定币总市值：`{{ defillama.overview.stablecoin_mcap }}`
+- 稳定币 24h 供给变化：`{{ defillama.overview.stablecoin_supply_change_1d }}`
+- 全网 TVL：`{{ defillama.overview.total_tvl }}`
+- 全网 TVL 24h 变化：`{{ defillama.overview.change_1d }}`
+- 全网 TVL 真实资金流出量：`{{ defillama.overview.true_flow_24h }}`
+- DEX 24h 总交易量：`{{ defillama.overview.dex_volume_24h }}`
+- DEX 7d 变化：`{{ defillama.overview.dex_volume_change_7d }}`
+- 跨链桥 24h 净流量：`{{ defillama.overview.bridge_netflow_24h }}`
+- 跨链桥说明：{{ defillama.overview.bridge_note }}
+- 24h 清算总额：`{{ defillama.overview.liquidation_24h }}`
+- 清算说明：{{ defillama.overview.liquidation_note }}
+- 风险判断：{{ defillama.overview.risk_signal }}
+- 稳定币 7d 变化：`{{ defillama.overview.stablecoin_change_7d }}`
+- USDT Dominance：`{{ defillama.overview.usdt_dominance }}`
+- 全网 TVL 7d 变化：`{{ defillama.overview.change_7d }}`
+- 口径提示：{{ defillama.overview.attribution_note }}
+- 概括：{{ defillama.overview.summary }}
+
+### Chains 公链页
+
+- 结论：{{ defillama.chain_summary }}
+{% for item in defillama.chain_flows -%}
+- `{{ item.name }}`：TVL `{{ item.tvl }}`，7d `{{ item.change_7d }}`，TVL 变化 `{{ item.change_amount_7d }}`，跨链桥 24h 净流量 `{{ item.bridge_netflow_24h }}`，判断：{{ item.signal }}
+{% endfor %}
+
+### Categories 赛道页
+
+- 结论：{{ defillama.category_summary }}
+{% for item in defillama.category_flows -%}
+- `{{ item.name }}`：TVL `{{ item.tvl }}`，7d `{{ item.change_7d }}`，TVL 变化 `{{ item.netflow_7d }}`，判断：{{ item.signal }}
+{% endfor %}
+
+### Stablecoins Pegs
+
+- 结论：{{ defillama.peg_summary }}
+{% for item in defillama.peg_risks -%}
+- `{{ item.symbol }}`：价格 `{{ item.price }}`，偏离 `{{ item.deviation }}`，规模 `{{ item.market_cap }}`，24h 供给变化 `{{ item.supply_change_1d }}`，状态：{{ item.status }}
+{% endfor %}
+
+### 头部 DeFi 协议 Top 10
+
+- 结论：{{ defillama.protocol_summary }}
+{% for protocol in defillama.top_protocols -%}
+- `{{ protocol.name }}` | {{ protocol.category }} | TVL `{{ protocol.tvl }}` | 1d `{{ protocol.change_1d }}` | 7d `{{ protocol.change_7d }}` | Mcap/TVL `{{ protocol.mcap_tvl }}` | Fees 24h `{{ protocol.fees_24h }}` | Revenue 24h `{{ protocol.revenue_24h }}` | 判断：{{ protocol.signal }}
+{% endfor %}
+
+## Solana 链上活跃度
+
+- 概括：{{ helius.summary }}
+- 近12h 非投票交易数：`{{ helius.non_vote_transactions_12h }}`
+- 近1h 平均 TPS：`{{ helius.avg_tps_1h }}`
+- 最近样本优先费 P50：`{{ helius.priority_fee_p50 }}`
+- 最近样本优先费 P95：`{{ helius.priority_fee_p95 }}`
+- 优先费说明：{{ helius.priority_fee_note }}
+- 协议温度计结论：{{ helius.protocol_priority_summary }}
+{% for item in helius.protocol_priority_watches -%}
+- `{{ item.name }}`：样本地址 `{{ item.address_count }}` 个，P50 `{{ item.priority_fee_p50 }}`，P95 `{{ item.priority_fee_p95 }}`，判断：{{ item.signal }}
+{% endfor %}
+- 稳定币供给说明：{{ helius.stablecoin_summary }}
+{% for item in helius.stablecoin_supplies -%}
+- `{{ item.symbol }}`：当前供给 `{{ item.supply }}`，24h 变化 `{{ item.change_24h }}`
+{% endfor %}
+- LSD 供给说明：{{ helius.lst_summary }}
+{% for item in helius.lst_supplies -%}
+- `{{ item.symbol }}`：当前供给 `{{ item.supply }}`，24h 变化 `{{ item.change_24h }}`
+{% endfor %}
+
+## 热点赛道
+
+{% for item in narratives -%}
+- `{{ item.name }}`：热度第 `{{ item.heat_rank }}`，关注资产 `{{ item.leader_assets | join(" / ") }}`
+{% endfor %}
+
+## 热门币种
+
+{% for coin in top_coins -%}
+- `{{ coin.symbol }}` | {{ coin.sector }} | 价格 `{{ coin.price }}` | 量能变化 `{{ coin.volume_change }}` | {{ coin.reason }}
+{% endfor %}
+
+## 巨鲸观察
+
+{% for whale in whale_observations -%}
+- `{{ whale.chain }}` `{{ whale.symbol }}`：`{{ whale.amount_usd }}`，{{ whale.interpretation }}
+{% endfor %}

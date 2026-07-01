@@ -1,0 +1,10 @@
+﻿folder_token: RLzwfxkcGlONoBdhelJcbj3anTe
+chat_id: oc_7802228a13340fe2eee36fd281849609
+base_token: PvJLbVUhdaWldSsFwc3c46JEnCb
+table_id: tblejolNwlmzlABV
+
+publish:
+  upload_market_doc: true
+  send_market_message: true
+  upload_kol_doc: true
+  send_kol_message: true

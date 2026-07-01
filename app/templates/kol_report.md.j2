@@ -1,0 +1,34 @@
+# {{ title }}
+
+> 统计窗口：`{{ window_start }}` 至 `{{ window_end }}`（{{ timezone }}）
+> 样本范围：默认 KOL 模板
+> 结果概览：命中 `{{ hit_count }}` 个账号，共 `{{ post_count }}` 条有效帖子
+
+## 今日一句话
+
+- {{ one_liner }}
+
+## 总览
+
+- 当前为云上脚手架样例输出，已具备 24 小时过滤、模板渲染和 worth-reading 解析能力。
+
+{% for group in groups %}
+## {{ group.group_name }}
+
+- 组内主线：{{ group.group_summary }}
+
+{% for hit in group.hits %}
+#### @{{ hit.username }} | {{ hit.role }}
+- 核心观点：{{ hit.core }}
+- 明确判断：{{ hit.judgement }}
+- 值得关注：{{ hit.watch_reason }}
+{% endfor %}
+
+{% endfor %}
+## 值得一读的推文链接
+
+{% for item in worth_reading %}
+- `{{ item.display_name }}`：`{{ item.tweet_url }}`
+  `tags`: {% for tag in item.tags %}`{{ tag }}` {% endfor %}
+
+{% endfor %}

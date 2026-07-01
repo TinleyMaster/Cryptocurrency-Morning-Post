@@ -1,0 +1,76 @@
+major_coin_ids:
+  BTC: 1
+  ETH: 1027
+  SOL: 5426
+  BNB: 1839
+
+news_coin_ids:
+  - 1
+  - 1027
+  - 5426
+
+trends_sources:
+  - "Google Trends"
+  - "X (Twitter)"
+
+top_coin_limit: 5
+
+defillama:
+  chain_limit: 6
+  top_protocol_limit: 10
+  category_watchlist:
+    - Liquid Staking
+    - Lending
+    - Dexs
+  bridge_watchlist:
+    - Ethereum
+    - Solana
+    - Arbitrum
+    - Base
+  peg_watchlist:
+    - USDT
+    - USDC
+    - USDe
+    - DAI
+    - FDUSD
+  stablecoin_supply_watchlist:
+    - USDT
+    - USDC
+
+coinglass:
+  exchange_watchlist:
+    - Binance
+    - OKX
+    - Bybit
+    - Gate
+    - Hyperliquid
+
+helius:
+  performance_sample_limit: 720
+  tps_sample_count: 60
+  priority_fee_watchlist:
+    Jupiter:
+      - JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4
+    Raydium:
+      - routeUGWgWzqBWFcrCfv8tritsqukccJPu3q5GPP3xS
+      - CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C
+      - CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK
+    Kamino:
+      - 7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF
+      - FarmsPZpWu9i7Kky8tPN37rs2TpmMrAZrC7S7vJa91Hr
+  stablecoin_mints:
+    USDC: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+    USDT: Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB
+  lst_mints:
+    JitoSOL: J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn
+    mSOL: mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So
+    bSOL: bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1
+
+dune:
+  whale_query_id:
+  whale_limit: 5
+  row_mapping:
+    chain: chain
+    symbol: symbol
+    amount_usd: amount_usd
+    interpretation: interpretation
