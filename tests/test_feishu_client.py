@@ -27,7 +27,45 @@ def test_build_webhook_text_content_uses_plain_text():
     assert "今日已更新" in payload["content"]["text"]
 
 
-def test_poll_import_task_includes_result_context_on_failure(monkeypatch):
+def test_poll_import_task_waits_for_status_2_then_returns_url(monkeypatch):
+    client = FeishuClient("app_id", "app_secret")
+    responses = iter(
+        [
+            {
+                "code": 0,
+                "msg": "success",
+                "data": {
+                    "result": {
+                        "job_status": 2,
+                        "job_error_msg": "",
+                    }
+                },
+            },
+            {
+                "code": 0,
+                "msg": "success",
+                "data": {
+                    "result": {
+                        "job_status": 0,
+                        "job_error_msg": "success",
+                        "url": "https://example.feishu.cn/docx/abc",
+                    }
+                },
+            },
+        ]
+    )
+
+    def fake_request(method, path, params=None, json_body=None):  # noqa: ANN001
+        return next(responses)
+
+    monkeypatch.setattr(client, "_request", fake_request)
+    assert (
+        client._poll_import_task("ticket_123", poll_interval=0, poll_timeout=5)
+        == "https://example.feishu.cn/docx/abc"
+    )
+
+
+def test_poll_import_task_includes_result_context_on_explicit_failure(monkeypatch):
     client = FeishuClient("app_id", "app_secret")
 
     def fake_request(method, path, params=None, json_body=None):  # noqa: ANN001
@@ -36,8 +74,8 @@ def test_poll_import_task_includes_result_context_on_failure(monkeypatch):
             "msg": "ok",
             "data": {
                 "result": {
-                    "job_status": 2,
-                    "job_error_msg": "",
+                    "job_status": 3,
+                    "job_error_msg": "mount point not found or no permission",
                 }
             },
         }
@@ -48,8 +86,8 @@ def test_poll_import_task_includes_result_context_on_failure(monkeypatch):
         client._poll_import_task("ticket_123", poll_interval=0, poll_timeout=1)
     except RuntimeError as exc:
         message = str(exc)
-        assert "status=2" in message
-        assert "result={'job_status': 2, 'job_error_msg': ''}" in message
+        assert "status=3" in message
+        assert "mount point not found or no permission" in message
         assert "response={'code': 0, 'msg': 'ok'" in message
     else:  # pragma: no cover - defensive
         raise AssertionError("expected RuntimeError for failed import task")

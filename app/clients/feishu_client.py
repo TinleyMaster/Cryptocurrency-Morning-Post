@@ -269,12 +269,8 @@ class FeishuClient:
                 return result["url"]
 
             job_status = result.get("job_status")
-            if job_status not in (None, 1):
-                error_msg = (
-                    result.get("job_error_msg")
-                    or response.get("msg")
-                    or "unknown import failure"
-                )
+            error_msg = (result.get("job_error_msg") or "").strip()
+            if error_msg and error_msg.lower() != "success":
                 raise RuntimeError(
                     "Feishu import task failed: "
                     f"status={job_status}, error={error_msg}, result={result}, response={response}"
