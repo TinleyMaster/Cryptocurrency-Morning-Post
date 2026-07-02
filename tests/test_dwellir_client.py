@@ -2,11 +2,21 @@ from app.clients.dwellir_client import DwellirClient
 
 
 class FakeResponse:
-    def __init__(self, payload, status_code: int = 200) -> None:  # noqa: ANN001
+    def __init__(
+        self,
+        payload=None,  # noqa: ANN001
+        status_code: int = 200,
+        text: str | None = None,
+        raises_json: bool = False,
+    ) -> None:
         self._payload = payload
         self.status_code = status_code
+        self.text = text if text is not None else ("" if payload is None else str(payload))
+        self._raises_json = raises_json
 
     def json(self):  # noqa: ANN201
+        if self._raises_json:
+            raise ValueError("invalid json")
         return self._payload
 
 
@@ -87,3 +97,41 @@ def test_dwellir_client_requires_api_key():
         assert "DWELLIR_API_KEY" in str(exc)
     else:  # pragma: no cover - defensive
         raise AssertionError("expected RuntimeError when Dwellir API key is missing")
+
+
+def test_dwellir_client_falls_back_to_public_info_endpoint(monkeypatch):
+    def fake_post(self, url, headers=None, json=None, timeout=None):  # noqa: ANN001
+        if url == "https://api-hyperliquid-mainnet-info.n.dwellir.com/info":
+            return FakeResponse(
+                status_code=422,
+                text="Failed to deserialize the JSON body into the target type",
+                raises_json=True,
+            )
+        assert url == "https://api.hyperliquid.xyz/info"
+        if json["type"] == "metaAndAssetCtxs":
+            return FakeResponse(
+                [
+                    {"universe": [{"name": "BTC"}]},
+                    [
+                        {
+                            "dayNtlVlm": "1200000000",
+                            "funding": "0.00012",
+                            "openInterest": "12000",
+                            "prevDayPx": "100000",
+                            "markPx": "102000",
+                        }
+                    ],
+                ]
+            )
+        return FakeResponse({"BTC": "102000"})
+
+    monkeypatch.setattr("requests.sessions.Session.post", fake_post)
+    client = DwellirClient(
+        api_key="test-key",
+        market_config={"dwellir": {"hyperliquid": {"symbols": ["BTC"]}}},
+    )
+
+    monitor = client.get_hyperliquid_market_monitor()
+
+    assert "已自动回退官方 Hyperliquid endpoint" in monitor.summary
+    assert monitor.markets[0].symbol == "BTC"

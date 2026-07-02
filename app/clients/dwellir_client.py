@@ -9,6 +9,7 @@ from app.models.market import DwellirHyperliquidMarket, DwellirHyperliquidMonito
 
 class DwellirClient:
     HYPERLIQUID_INFO_URL = "https://api-hyperliquid-mainnet-info.n.dwellir.com/info"
+    HYPERLIQUID_PUBLIC_INFO_URL = "https://api.hyperliquid.xyz/info"
 
     def __init__(
         self,
@@ -23,9 +24,16 @@ class DwellirClient:
     def get_hyperliquid_market_monitor(self) -> DwellirHyperliquidMonitor:
         self._ensure_api_key()
         config = self.market_config.get("dwellir", {}).get("hyperliquid", {})
-        symbols = [str(item).upper() for item in config.get("symbols", ["BTC", "ETH", "SOL"])]
-        meta_payload = self._request_info({"type": "metaAndAssetCtxs"})
-        mids = self._request_info({"type": "allMids"})
+        symbols = [
+            str(item).upper() for item in config.get("symbols", ["BTC", "ETH", "SOL"])
+        ]
+        fallback_notes: list[str] = []
+        meta_payload, meta_note = self._request_info({"type": "metaAndAssetCtxs"})
+        if meta_note:
+            fallback_notes.append(meta_note)
+        mids, mids_note = self._request_info({"type": "allMids"})
+        if mids_note and mids_note not in fallback_notes:
+            fallback_notes.append(mids_note)
         meta, asset_contexts = self._unpack_meta_payload(meta_payload)
         universe = meta.get("universe", [])
 
@@ -55,6 +63,8 @@ class DwellirClient:
         )
         if missing_symbols:
             summary += f" 未命中币种：{', '.join(missing_symbols)}。"
+        if fallback_notes:
+            summary += f" {' '.join(fallback_notes)}"
 
         markets = [
             DwellirHyperliquidMarket(
@@ -116,27 +126,75 @@ class DwellirClient:
             "signal": self._classify_signal(change_pct, funding_rate, volume_24h),
         }
 
-    def _request_info(self, payload: dict[str, Any]) -> Any:
+    def _request_info(self, payload: dict[str, Any]) -> tuple[Any, str]:
+        try:
+            return self._post_info(
+                self.HYPERLIQUID_INFO_URL,
+                payload,
+                headers={
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                    "X-Api-Key": self.api_key or "",
+                },
+            ), ""
+        except RuntimeError as exc:
+            if not self._should_fallback_to_public(exc):
+                raise
+            fallback_note = (
+                "Dwellir Info Endpoint 对该请求返回 422，"
+                "已自动回退官方 Hyperliquid endpoint。"
+            )
+            return (
+                self._post_info(
+                    self.HYPERLIQUID_PUBLIC_INFO_URL,
+                    payload,
+                    headers={
+                        "Accept": "application/json",
+                        "Content-Type": "application/json",
+                    },
+                ),
+                fallback_note,
+            )
+
+    def _post_info(
+        self,
+        url: str,
+        payload: dict[str, Any],
+        headers: dict[str, str],
+    ) -> Any:
         session = requests.Session()
         session.trust_env = False
         response = session.post(
-            self.HYPERLIQUID_INFO_URL,
-            headers={
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "X-Api-Key": self.api_key or "",
-            },
+            url,
+            headers=headers,
             json=payload,
             timeout=self.timeout,
         )
-        data = response.json()
+        try:
+            data = response.json()
+        except ValueError as exc:
+            text_head = response.text[:300]
+            raise RuntimeError(
+                f"Dwellir request returned non-JSON response: status={response.status_code}, "
+                f"url={url}, payload={payload}, body={text_head!r}"
+            ) from exc
         if response.status_code >= 400:
             raise RuntimeError(
-                f"Dwellir request failed: status={response.status_code}, payload={payload}, body={data}"
+                f"Dwellir request failed: status={response.status_code}, url={url}, "
+                f"payload={payload}, body={data}"
             )
         if isinstance(data, dict) and data.get("error"):
             raise RuntimeError(f"Dwellir request failed: {data['error']}")
         return data
+
+    @staticmethod
+    def _should_fallback_to_public(exc: RuntimeError) -> bool:
+        message = str(exc)
+        return (
+            "status=422" in message
+            or "Failed to deserialize the JSON body into the target type" in message
+            or "non-JSON response" in message
+        )
 
     @staticmethod
     def _unpack_meta_payload(payload: Any) -> tuple[dict[str, Any], list[dict[str, Any]]]:

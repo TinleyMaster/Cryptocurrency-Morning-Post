@@ -25,3 +25,31 @@ def test_build_webhook_text_content_uses_plain_text():
     assert payload["msg_type"] == "text"
     assert payload["content"]["text"].startswith("加密市场早报\n\n")
     assert "今日已更新" in payload["content"]["text"]
+
+
+def test_poll_import_task_includes_result_context_on_failure(monkeypatch):
+    client = FeishuClient("app_id", "app_secret")
+
+    def fake_request(method, path, params=None, json_body=None):  # noqa: ANN001
+        return {
+            "code": 0,
+            "msg": "ok",
+            "data": {
+                "result": {
+                    "job_status": 2,
+                    "job_error_msg": "",
+                }
+            },
+        }
+
+    monkeypatch.setattr(client, "_request", fake_request)
+
+    try:
+        client._poll_import_task("ticket_123", poll_interval=0, poll_timeout=1)
+    except RuntimeError as exc:
+        message = str(exc)
+        assert "status=2" in message
+        assert "result={'job_status': 2, 'job_error_msg': ''}" in message
+        assert "response={'code': 0, 'msg': 'ok'" in message
+    else:  # pragma: no cover - defensive
+        raise AssertionError("expected RuntimeError for failed import task")
