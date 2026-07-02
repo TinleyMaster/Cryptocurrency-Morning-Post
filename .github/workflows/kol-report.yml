@@ -14,6 +14,7 @@ jobs:
     env:
       TZ: Asia/Shanghai
       XPOZ_API_KEY: ${{ secrets.XPOZ_API_KEY }}
+      WECOM_BOT_WEBHOOK_URL: ${{ secrets.WECOM_BOT_WEBHOOK_URL }}
       FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
       FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
       FEISHU_FOLDER_TOKEN: ${{ secrets.FEISHU_FOLDER_TOKEN }}

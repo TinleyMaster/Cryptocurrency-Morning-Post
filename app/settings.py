@@ -108,6 +108,7 @@ def load_settings() -> Settings:
         "DWELLIR_API_KEY": os.getenv("DWELLIR_API_KEY"),
         "HELIUS_API_KEY": os.getenv("HELIUS_API_KEY"),
         "QUICKNODE_SOLANA_RPC_URL": os.getenv("QUICKNODE_SOLANA_RPC_URL"),
+        "WECOM_BOT_WEBHOOK_URL": os.getenv("WECOM_BOT_WEBHOOK_URL"),
         "XPOZ_API_KEY": os.getenv("XPOZ_API_KEY"),
         "DUNE_API_KEY": os.getenv("DUNE_API_KEY"),
         "FEISHU_APP_ID": os.getenv("FEISHU_APP_ID"),

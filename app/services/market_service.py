@@ -12,6 +12,7 @@ from app.clients.dwellir_client import DwellirClient
 from app.clients.dune_client import DuneClient
 from app.clients.feishu_client import FeishuClient
 from app.clients.helius_client import HeliusClient
+from app.clients.wecom_client import WeComClient
 from app.logger import log_event
 from app.models.market import (
     DefiLlamaMonitor,
@@ -62,6 +63,7 @@ class MarketService:
             ),
             settings.feishu,
         )
+        self.wecom = WeComClient(settings.env.get("WECOM_BOT_WEBHOOK_URL"))
 
     def run_daily_report(self) -> dict[str, Any]:
         now_dt = now_in_timezone(self.settings.timezone)
@@ -100,6 +102,16 @@ class MarketService:
         doc_url = ""
         doc_note = ""
         message_id = ""
+        wecom_status = ""
+        summary_markdown = self._build_summary_markdown(
+            title=title,
+            snapshot=snapshot.summary,
+            defillama_summary=defillama_monitor.overview.summary,
+            helius_summary=helius_monitor.summary,
+            dwellir_summary=dwellir_monitor.summary,
+            doc_url=doc_url,
+            doc_note=doc_note,
+        )
         doc_import_blocker = self.publisher.get_doc_import_blocker()
         if doc_import_blocker:
             doc_note = f"未生成（{doc_import_blocker}）"
@@ -124,18 +136,40 @@ class MarketService:
                 )
 
         if self.publisher.can_send_summary():
-            message_id = self.publisher.send_summary(
+            summary_markdown = self._build_summary_markdown(
                 title=title,
-                content=self._build_summary_markdown(
-                    title=title,
-                    snapshot=snapshot.summary,
-                    defillama_summary=defillama_monitor.overview.summary,
-                    helius_summary=helius_monitor.summary,
-                    dwellir_summary=dwellir_monitor.summary,
-                    doc_url=doc_url,
-                    doc_note=doc_note,
-                ),
+                snapshot=snapshot.summary,
+                defillama_summary=defillama_monitor.overview.summary,
+                helius_summary=helius_monitor.summary,
+                dwellir_summary=dwellir_monitor.summary,
+                doc_url=doc_url,
+                doc_note=doc_note,
             )
+            message_id = self.publisher.send_summary(title=title, content=summary_markdown)
+        else:
+            summary_markdown = self._build_summary_markdown(
+                title=title,
+                snapshot=snapshot.summary,
+                defillama_summary=defillama_monitor.overview.summary,
+                helius_summary=helius_monitor.summary,
+                dwellir_summary=dwellir_monitor.summary,
+                doc_url=doc_url,
+                doc_note=doc_note,
+            )
+        if self.wecom.has_webhook():
+            try:
+                wecom_status = self.wecom.send_webhook_markdown_message(
+                    title=title,
+                    markdown=summary_markdown,
+                )
+            except Exception as exc:
+                log_event(
+                    self.logger,
+                    job="market_report",
+                    stage="wecom_summary",
+                    status="warning",
+                    detail=str(exc),
+                )
         log_event(
             self.logger,
             job="market_report",
@@ -144,11 +178,13 @@ class MarketService:
             doc_url=doc_url,
             doc_note=doc_note,
             message_id=message_id,
+            wecom_status=wecom_status,
         )
         return {
             "report_path": report_path,
             "doc_url": doc_url,
             "message_id": message_id,
+            "wecom_status": wecom_status,
         }
 
     def _get_market_snapshot(self) -> MarketSnapshot:

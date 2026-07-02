@@ -18,6 +18,7 @@ jobs:
       DWELLIR_API_KEY: ${{ secrets.DWELLIR_API_KEY }}
       HELIUS_API_KEY: ${{ secrets.HELIUS_API_KEY }}
       QUICKNODE_SOLANA_RPC_URL: ${{ secrets.QUICKNODE_SOLANA_RPC_URL }}
+      WECOM_BOT_WEBHOOK_URL: ${{ secrets.WECOM_BOT_WEBHOOK_URL }}
       XPOZ_API_KEY: ${{ secrets.XPOZ_API_KEY }}
       DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
       FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}

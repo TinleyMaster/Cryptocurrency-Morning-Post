@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from app.clients.feishu_client import FeishuClient
+from app.clients.wecom_client import WeComClient
 from app.clients.xpoz_client import XpozClient
 from app.logger import log_event
 from app.models.kol import KolProfile
@@ -34,6 +35,7 @@ class KolService:
             ),
             settings.feishu,
         )
+        self.wecom = WeComClient(settings.env.get("WECOM_BOT_WEBHOOK_URL"))
         self.deepread_service = DeepreadService(self.xpoz)
         self.base_archive_service = BaseArchiveService()
 
@@ -137,6 +139,7 @@ class KolService:
         doc_url = ""
         doc_note = ""
         message_id = ""
+        wecom_status = ""
         record_ids: list[str] = []
         doc_import_blocker = self.publisher.get_doc_import_blocker()
         if doc_import_blocker:
@@ -161,18 +164,30 @@ class KolService:
                     detail=str(exc),
                 )
 
+        summary_markdown = self._build_summary_markdown(
+            title=title,
+            hit_count=len(hits),
+            post_count=sum(len(hit.posts) for hit in hits),
+            record_count=len(payload.get("rows", [])),
+            doc_url=doc_url,
+            doc_note=doc_note,
+        )
         if self.publisher.can_send_summary():
-            message_id = self.publisher.send_summary(
-                title=title,
-                content=self._build_summary_markdown(
+            message_id = self.publisher.send_summary(title=title, content=summary_markdown)
+        if self.wecom.has_webhook():
+            try:
+                wecom_status = self.wecom.send_webhook_markdown_message(
                     title=title,
-                    hit_count=len(hits),
-                    post_count=sum(len(hit.posts) for hit in hits),
-                    record_count=len(payload.get("rows", [])),
-                    doc_url=doc_url,
-                    doc_note=doc_note,
-                ),
-            )
+                    markdown=summary_markdown,
+                )
+            except Exception as exc:
+                log_event(
+                    self.logger,
+                    job="kol_report",
+                    stage="wecom_summary",
+                    status="warning",
+                    detail=str(exc),
+                )
         if self.publisher.can_write_base_records():
             record_ids = self.publisher.batch_create_base_records(payload)
         log_event(
@@ -184,6 +199,7 @@ class KolService:
             doc_note=doc_note,
             records=len(record_ids),
             message_id=message_id,
+            wecom_status=wecom_status,
         )
         return {
             "report_path": report_path,
@@ -191,6 +207,7 @@ class KolService:
             "payload_path": payload_path,
             "doc_url": doc_url,
             "message_id": message_id,
+            "wecom_status": wecom_status,
             "record_ids": record_ids,
         }
 
