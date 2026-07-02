@@ -326,5 +326,5 @@ class MarketService:
             f"- Solana 链上：{helius_summary}",
         ]
         if doc_url:
-            lines.append(f"- 文档： [点击查看]({doc_url})")
+            lines.append(f"- 云文档：{doc_url}")
         return "\n".join(lines)

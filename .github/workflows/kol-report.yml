@@ -15,6 +15,7 @@ jobs:
       FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
       FEISHU_FOLDER_TOKEN: ${{ secrets.FEISHU_FOLDER_TOKEN }}
       FEISHU_CHAT_ID: ${{ secrets.FEISHU_CHAT_ID }}
+      FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
       FEISHU_BASE_TOKEN: ${{ secrets.FEISHU_BASE_TOKEN }}
       FEISHU_TABLE_ID: ${{ secrets.FEISHU_TABLE_ID }}
     steps:

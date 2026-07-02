@@ -197,5 +197,5 @@ class KolService:
             f"- Base 归档：{record_count} 条",
         ]
         if doc_url:
-            lines.append(f"- 文档： [点击查看]({doc_url})")
+            lines.append(f"- 云文档：{doc_url}")
         return "\n".join(lines)
