@@ -8,6 +8,7 @@ from typing import Any
 from app.clients.cmc_client import CmcClient
 from app.clients.coinglass_client import CoinGlassClient
 from app.clients.defillama_client import DefiLlamaClient
+from app.clients.dwellir_client import DwellirClient
 from app.clients.dune_client import DuneClient
 from app.clients.feishu_client import FeishuClient
 from app.clients.helius_client import HeliusClient
@@ -15,6 +16,7 @@ from app.logger import log_event
 from app.models.market import (
     DefiLlamaMonitor,
     DefiLlamaOverview,
+    DwellirHyperliquidMonitor,
     HeliusSolanaMonitor,
     MarketSnapshot,
     TopCoin,
@@ -45,6 +47,10 @@ class MarketService:
             rpc_url=settings.env.get("QUICKNODE_SOLANA_RPC_URL"),
             market_config=settings.market,
         )
+        self.dwellir = DwellirClient(
+            settings.env.get("DWELLIR_API_KEY"),
+            market_config=settings.market,
+        )
         self.defillama = DefiLlamaClient(market_config=settings.market)
         self.dune = DuneClient(
             settings.env.get("DUNE_API_KEY"),
@@ -62,6 +68,7 @@ class MarketService:
         snapshot = self._get_market_snapshot()
         defillama_monitor = self._get_defillama_monitor()
         helius_monitor, helius_state = self._get_helius_monitor()
+        dwellir_monitor = self._get_dwellir_monitor()
         narratives = self._get_trending_narratives()
         top_coins = self._get_top_coins()
         whales = self._get_whale_observations()
@@ -73,6 +80,7 @@ class MarketService:
             "snapshot": snapshot,
             "defillama": defillama_monitor,
             "helius": helius_monitor,
+            "dwellir": dwellir_monitor,
             "narratives": narratives,
             "top_coins": top_coins,
             "whale_observations": whales,
@@ -123,6 +131,7 @@ class MarketService:
                     snapshot=snapshot.summary,
                     defillama_summary=defillama_monitor.overview.summary,
                     helius_summary=helius_monitor.summary,
+                    dwellir_summary=dwellir_monitor.summary,
                     doc_url=doc_url,
                     doc_note=doc_note,
                 ),
@@ -323,12 +332,34 @@ class MarketService:
                 None,
             )
 
+    def _get_dwellir_monitor(self) -> DwellirHyperliquidMonitor:
+        try:
+            return self.dwellir.get_hyperliquid_market_monitor()
+        except Exception as exc:
+            log_event(
+                self.logger,
+                job="market_report",
+                stage="dwellir_fetch",
+                status="warning",
+                detail=str(exc),
+            )
+            return DwellirHyperliquidMonitor(
+                watchlist="-",
+                total_volume_24h="-",
+                breadth="-",
+                funding_tone="-",
+                hottest_market="-",
+                markets=[],
+                summary=f"Dwellir Hyperliquid 数据暂不可用：{exc}",
+            )
+
     def _build_summary_markdown(
         self,
         title: str,
         snapshot: str,
         defillama_summary: str,
         helius_summary: str,
+        dwellir_summary: str,
         doc_url: str,
         doc_note: str,
     ) -> str:
@@ -339,6 +370,7 @@ class MarketService:
             f"- 一句话：{snapshot}",
             f"- 资金监控：{defillama_summary}",
             f"- Solana 链上：{helius_summary}",
+            f"- Hyperliquid：{dwellir_summary}",
         ]
         if doc_url:
             lines.append(f"- 云文档：{doc_url}")

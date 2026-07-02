@@ -85,6 +85,18 @@
 - `{{ item.symbol }}`：当前供给 `{{ item.supply }}`，24h 变化 `{{ item.change_24h }}`
 {% endfor %}
 
+## Hyperliquid 市场温度
+
+- 概括：{{ dwellir.summary }}
+- 监控范围：`{{ dwellir.watchlist }}`
+- 监控池 24h 名义成交额：`{{ dwellir.total_volume_24h }}`
+- 市场宽度：{{ dwellir.breadth }}
+- 资金费率温度：{{ dwellir.funding_tone }}
+- 焦点市场：{{ dwellir.hottest_market }}
+{% for item in dwellir.markets -%}
+- `{{ item.symbol }}`：价格 `{{ item.price }}`，24h `{{ item.change_24h }}`，成交额 `{{ item.volume_24h }}`，资金费率 `{{ item.funding_rate }}`，持仓规模 `{{ item.open_interest }}`，判断：{{ item.signal }}
+{% endfor %}
+
 ## 热点赛道
 
 {% for item in narratives -%}

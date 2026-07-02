@@ -75,6 +75,28 @@ class HeliusSolanaMonitor:
 
 
 @dataclass
+class DwellirHyperliquidMarket:
+    symbol: str
+    price: str
+    change_24h: str
+    volume_24h: str
+    funding_rate: str
+    open_interest: str
+    signal: str
+
+
+@dataclass
+class DwellirHyperliquidMonitor:
+    watchlist: str
+    total_volume_24h: str
+    breadth: str
+    funding_tone: str
+    hottest_market: str
+    markets: list[DwellirHyperliquidMarket]
+    summary: str
+
+
+@dataclass
 class DefiLlamaOverview:
     stablecoin_mcap: str
     stablecoin_supply_change_1d: str

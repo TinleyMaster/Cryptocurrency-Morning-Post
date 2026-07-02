@@ -105,6 +105,7 @@ def load_settings() -> Settings:
     env = {
         "CMC_API_KEY": os.getenv("CMC_API_KEY"),
         "COINGLASS_API_KEY": os.getenv("COINGLASS_API_KEY"),
+        "DWELLIR_API_KEY": os.getenv("DWELLIR_API_KEY"),
         "HELIUS_API_KEY": os.getenv("HELIUS_API_KEY"),
         "QUICKNODE_SOLANA_RPC_URL": os.getenv("QUICKNODE_SOLANA_RPC_URL"),
         "XPOZ_API_KEY": os.getenv("XPOZ_API_KEY"),
