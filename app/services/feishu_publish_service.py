@@ -13,10 +13,15 @@ class FeishuPublishService:
     def has_webhook(self) -> bool:
         return bool(self.feishu_config.get("webhook_url"))
 
+    def get_doc_import_blocker(self) -> str | None:
+        if not self.client.has_app_credentials():
+            return "缺少 FEISHU_APP_ID / FEISHU_APP_SECRET"
+        if not self.feishu_config.get("folder_token"):
+            return "缺少 FEISHU_FOLDER_TOKEN"
+        return None
+
     def can_import_docs(self) -> bool:
-        return self.client.has_app_credentials() and bool(
-            self.feishu_config.get("folder_token")
-        )
+        return self.get_doc_import_blocker() is None
 
     def can_send_summary(self) -> bool:
         return self.has_webhook() or (

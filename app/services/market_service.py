@@ -90,11 +90,23 @@ class MarketService:
                 json.dumps(helius_state, ensure_ascii=False, indent=2),
             )
         doc_url = ""
+        doc_note = ""
         message_id = ""
-        if self.publisher.can_import_docs():
+        doc_import_blocker = self.publisher.get_doc_import_blocker()
+        if doc_import_blocker:
+            doc_note = f"未生成（{doc_import_blocker}）"
+            log_event(
+                self.logger,
+                job="market_report",
+                stage="feishu_doc_import",
+                status="skipped",
+                detail=doc_import_blocker,
+            )
+        else:
             try:
                 doc_url = self.publisher.import_markdown_as_docx(report_path, title)
             except Exception as exc:
+                doc_note = f"未生成（导入失败：{exc}）"
                 log_event(
                     self.logger,
                     job="market_report",
@@ -112,6 +124,7 @@ class MarketService:
                     defillama_summary=defillama_monitor.overview.summary,
                     helius_summary=helius_monitor.summary,
                     doc_url=doc_url,
+                    doc_note=doc_note,
                 ),
             )
         log_event(
@@ -120,6 +133,7 @@ class MarketService:
             stage="publish",
             status="success",
             doc_url=doc_url,
+            doc_note=doc_note,
             message_id=message_id,
         )
         return {
@@ -316,6 +330,7 @@ class MarketService:
         defillama_summary: str,
         helius_summary: str,
         doc_url: str,
+        doc_note: str,
     ) -> str:
         lines = [
             "今日加密市场早报已更新：",
@@ -327,4 +342,6 @@ class MarketService:
         ]
         if doc_url:
             lines.append(f"- 云文档：{doc_url}")
+        elif doc_note:
+            lines.append(f"- 云文档：{doc_note}")
         return "\n".join(lines)

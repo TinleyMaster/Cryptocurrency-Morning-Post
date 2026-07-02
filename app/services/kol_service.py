@@ -135,12 +135,24 @@ class KolService:
         write_utf8(payload_path, json.dumps(payload, ensure_ascii=False, indent=2))
 
         doc_url = ""
+        doc_note = ""
         message_id = ""
         record_ids: list[str] = []
-        if self.publisher.can_import_docs():
+        doc_import_blocker = self.publisher.get_doc_import_blocker()
+        if doc_import_blocker:
+            doc_note = f"未生成（{doc_import_blocker}）"
+            log_event(
+                self.logger,
+                job="kol_report",
+                stage="feishu_doc_import",
+                status="skipped",
+                detail=doc_import_blocker,
+            )
+        else:
             try:
                 doc_url = self.publisher.import_markdown_as_docx(report_path, title)
             except Exception as exc:
+                doc_note = f"未生成（导入失败：{exc}）"
                 log_event(
                     self.logger,
                     job="kol_report",
@@ -158,6 +170,7 @@ class KolService:
                     post_count=sum(len(hit.posts) for hit in hits),
                     record_count=len(payload.get("rows", [])),
                     doc_url=doc_url,
+                    doc_note=doc_note,
                 ),
             )
         if self.publisher.can_write_base_records():
@@ -168,6 +181,7 @@ class KolService:
             stage="publish",
             status="success",
             doc_url=doc_url,
+            doc_note=doc_note,
             records=len(record_ids),
             message_id=message_id,
         )
@@ -187,6 +201,7 @@ class KolService:
         post_count: int,
         record_count: int,
         doc_url: str,
+        doc_note: str,
     ) -> str:
         lines = [
             "今日加密 KOL 过去 24 小时监控报告已更新：",
@@ -198,4 +213,6 @@ class KolService:
         ]
         if doc_url:
             lines.append(f"- 云文档：{doc_url}")
+        elif doc_note:
+            lines.append(f"- 云文档：{doc_note}")
         return "\n".join(lines)
