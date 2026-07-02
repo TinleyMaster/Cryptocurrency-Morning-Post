@@ -1,4 +1,4 @@
-﻿name: kol-report
+name: kol-report
 
 on:
   schedule:
@@ -23,12 +23,10 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements.txt
-        working-directory: ./cloud_automation
       - run: python -m app.main_kol
-        working-directory: ./cloud_automation
       - run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add cloud_automation/reports/
+          git add reports/
           git commit -m "chore: update kol report" || echo "no changes"
           git push
