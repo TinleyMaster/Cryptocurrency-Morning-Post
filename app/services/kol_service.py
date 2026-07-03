@@ -370,17 +370,20 @@ class KolService:
                             hit=hit,
                             post=post,
                             now_dt=now_dt,
-                            core=self._safe_text(
-                                candidate.get("core"),
-                                self._summarize_text(post.text, 140),
+                            core=self._finalize_core(
+                                self._safe_text(candidate.get("core")),
+                                hit,
+                                post,
                             ),
-                            judgement=self._safe_text(
-                                candidate.get("judgement"),
-                                "当前更适合把它当作线索，而不是单条推文就下重结论。",
+                            judgement=self._finalize_judgement(
+                                self._safe_text(candidate.get("judgement")),
+                                hit,
+                                post,
                             ),
-                            watch_reason=self._safe_text(
-                                candidate.get("watch_reason"),
-                                "值得继续跟踪这位账号后续 1-2 天是否持续强化同一叙事。",
+                            watch_reason=self._finalize_watch_reason(
+                                self._safe_text(candidate.get("watch_reason")),
+                                hit,
+                                post,
                             ),
                             tags=self._normalize_tags(
                                 candidate.get("tags"), hit, post, now_dt
@@ -421,12 +424,16 @@ class KolService:
             rendered_hits = [
                 self._render_hit_block(
                     hit=hit,
-                    post=hit.posts[0],
+                    post=self._pick_informative_post(hit, None),
                     now_dt=now_dt,
-                    core=self._summarize_text(hit.posts[0].text, 140),
-                    judgement="当前更适合把它当作线索跟踪，而不是只靠单条表达直接追价。",
-                    watch_reason="建议继续观察是否出现连续发帖、互动放大或观点强化。",
-                    tags=self._infer_tags(hit, hit.posts[0], now_dt),
+                    core=self._build_specific_core(hit, self._pick_informative_post(hit, None)),
+                    judgement=self._build_specific_judgement(
+                        hit, self._pick_informative_post(hit, None)
+                    ),
+                    watch_reason=self._build_specific_watch_reason(
+                        hit, self._pick_informative_post(hit, None)
+                    ),
+                    tags=self._infer_tags(hit, self._pick_informative_post(hit, None), now_dt),
                 )
                 for hit in selected_hits
             ]
@@ -579,6 +586,10 @@ class KolService:
             "4. worth_reading 优先覆盖全部高信息量帖子，不要机械限制在 8 条；通常输出 6-15 条，并且 tweet_id 必须来自输入数据。"
             "5. tags 使用 #KOL/#Topic/#Asset/#Type/#Date 体系。"
             "6. 明确排除 reply/repost/纯闲聊/表情包/体育或生活类跑题内容，优先选择原生观点表达、框架帖、机制分析、政策解读、产品进展。"
+            "7. core 必须写出这条帖子的主张或信息增量，不能只复述情绪。"
+            "8. judgement 必须给出明确结论，例如偏多/偏空/偏中性、长期/短线、制度增量/产品进展/结构转强，不要写“继续观察”“线索跟踪”“不要下重结论”之类空话。"
+            "9. watch_reason 必须指出后续要观察的具体变量，如 ETF 审批节奏、收益产品扩张、价格结构是否延续、资金是否轮动，不要写泛泛的“是否强化观点”。"
+            "10. 如果某个账号只有情绪帖或闲聊帖，就不要把它放进 groups 或 worth_reading。"
         )
 
     def _report_user_prompt(
@@ -660,15 +671,15 @@ class KolService:
 
     def _fallback_group_summary(self, group_name: str, hits: list[KolHit]) -> str:
         topics = self._topics_overview(hits)
-        return f"这一组今天更集中在 {topics}，整体更适合把它们当成分化行情下的线索源。"
+        return f"这一组今天最有信息量的内容集中在 {topics}，提供的主要是结构判断、制度进展或产品化线索，而不是单纯情绪表达。"
 
     def _fallback_three_points(self, hits: list[KolHit]) -> list[str]:
         if not hits:
             return ["过去 24 小时没有抓到可用帖子，建议优先排查抓取链路和配置项。"]
         return [
             f"命中账号主要集中在 {self._topics_overview(hits)}，说明市场仍以结构性主题为主。",
-            "高信号账号更常见的表达是“先看结构、再看催化”，而不是单条推文直接给终局判断。",
-            "值得重点跟踪的是连续表达、互动放大和是否出现跨账号共振，而不是只看单次喊单。",
+            "高信号账号更常见的是给出明确框架和变量，例如周期、监管窗口、收益机制和资产轮动，而不是泛泛情绪。",
+            "真正值得跟踪的是有连续观点输出、能提供机制解释或给出下一步观察变量的账号，而不是单次喊单或短句吐槽。",
         ]
 
     def _fallback_consensus(self, hits: list[KolHit]) -> list[str]:
@@ -676,7 +687,7 @@ class KolService:
             return []
         return [
             f"大部分高信号表达都围绕 {self._topics_overview(hits)} 展开，而不是全面 risk-on 或全面 risk-off。",
-            "相比空泛口号，KOL 更愿意讨论结构位置、制度窗口和产品化进展。",
+            "相比空泛口号，KOL 更愿意讨论结构位置、制度窗口、收益机制和产品化进展。",
         ]
 
     def _fallback_differences(self, hits: list[KolHit]) -> list[str]:
@@ -803,6 +814,8 @@ class KolService:
             return False
         if self._looks_like_low_signal_smalltalk(text):
             return False
+        if self._looks_like_pure_emotion(text):
+            return False
 
         score = self._post_signal_score(post, hit)
         if score >= self.MIN_INFORMATIVE_POST_SCORE:
@@ -831,7 +844,7 @@ class KolService:
             "cycle",
             "adoption",
         ]
-        return any(keyword in lowered for keyword in signal_keywords)
+        return any(keyword in lowered for keyword in signal_keywords) or self._has_analysis_signal(text)
 
     @staticmethod
     def _looks_like_reply_or_repost(text: str) -> bool:
@@ -891,6 +904,97 @@ class KolService:
             return False
         return any(pattern in lowered for pattern in smalltalk_patterns)
 
+    @staticmethod
+    def _looks_like_pure_emotion(text: str) -> bool:
+        lowered = text.lower()
+        emotion_patterns = [
+            "怎么还在跌",
+            "继续跌",
+            "太难了",
+            "难受",
+            "无语",
+            "服了",
+            "崩了",
+            "麻了",
+            "绝望",
+            "气死",
+            "笑死",
+            "慌",
+            "panic",
+            "depressed",
+            "frustrated",
+        ]
+        analysis_keywords = [
+            "because",
+            "therefore",
+            "expect",
+            "if",
+            "then",
+            "support",
+            "resistance",
+            "cycle",
+            "framework",
+            "approval",
+            "inflow",
+            "yield",
+            "etf",
+            "sec",
+            "macro",
+            "nonfarm",
+            "inflation",
+            "rates",
+            "btc",
+            "eth",
+            "stablecoin",
+            "morpho",
+            "spark",
+        ]
+        if any(keyword in lowered for keyword in analysis_keywords):
+            return False
+        return any(pattern in lowered for pattern in emotion_patterns)
+
+    @staticmethod
+    def _has_analysis_signal(text: str) -> bool:
+        lowered = text.lower()
+        signal_patterns = [
+            "because",
+            "therefore",
+            "which means",
+            "this implies",
+            "expect",
+            "likely",
+            "unlikely",
+            "bull",
+            "bear",
+            "support",
+            "resistance",
+            "breakout",
+            "breakdown",
+            "inflow",
+            "outflow",
+            "approval",
+            "adoption",
+            "yield",
+            "pricing",
+            "valuation",
+            "rotation",
+            "周期",
+            "预期",
+            "判断",
+            "意味着",
+            "因为",
+            "所以",
+            "如果",
+            "利率",
+            "通胀",
+            "非农",
+            "监管",
+            "收益",
+            "流动性",
+            "结构",
+        ]
+        return any(pattern in lowered for pattern in signal_patterns)
+
     def _hit_signal_score(self, hit: KolHit) -> int:
         return (
             sum(self._post_engagement(post) for post in hit.posts)
@@ -916,6 +1020,71 @@ class KolService:
         if informative_posts:
             return informative_posts[0]
         return self._pick_post(hit, tweet_id)
+
+    def _finalize_core(self, candidate: str, hit: KolHit, post: TweetRecord) -> str:
+        if candidate and not self._is_vague_statement(candidate):
+            return candidate
+        return self._build_specific_core(hit, post)
+
+    def _finalize_judgement(self, candidate: str, hit: KolHit, post: TweetRecord) -> str:
+        if candidate and not self._is_vague_statement(candidate):
+            return candidate
+        return self._build_specific_judgement(hit, post)
+
+    def _finalize_watch_reason(self, candidate: str, hit: KolHit, post: TweetRecord) -> str:
+        if candidate and not self._is_vague_statement(candidate):
+            return candidate
+        return self._build_specific_watch_reason(hit, post)
+
+    def _build_specific_core(self, hit: KolHit, post: TweetRecord) -> str:
+        text = self._summarize_text(post.text, 180)
+        topics, assets, type_tags = self._detect_tags(hit, post)
+        topic_text = " / ".join(topics[:2]) if topics else hit.category
+        asset_text = "、".join(assets[:2]) if assets else ""
+        if asset_text:
+            return f"围绕 `{topic_text}` 展开，重点涉及 `{asset_text}`，核心表达是：{text}"
+        return f"围绕 `{topic_text}` 展开，核心表达是：{text}"
+
+    def _build_specific_judgement(self, hit: KolHit, post: TweetRecord) -> str:
+        lowered = (post.text or "").lower()
+        if any(keyword in lowered for keyword in ["not dead", "bull", "uptrend", "breakout", "upside", "继续上行", "转强"]):
+            return "整体偏多或偏结构性乐观，说明发帖者认为当前并非趋势破坏，而是仍存在继续上行或情绪修复空间。"
+        if any(keyword in lowered for keyword in ["bear", "downside", "risk", "pressure", "压制", "回调", "错杀"]):
+            return "偏谨慎但不是纯看空，更像是在提示阶段性压力、节奏风险或市场定价与现实之间仍有偏差。"
+        if any(keyword in lowered for keyword in ["sec", "etf", "approval", "regulation", "监管"]):
+            return "这更像制度与监管层面的增量信息，影响不在短线情绪，而在后续审批节奏和市场预期重定价。"
+        if any(keyword in lowered for keyword in ["yield", "stablecoin", "morpho", "spark", "product", "收益"]):
+            return "这更像产品化和收益机制层面的增量，重点不只是概念，而是实际分发、流动性和规模化能力。"
+        return "这条内容更像对当前市场结构、机制或叙事方向的定性判断，而不是单纯情绪宣泄。"
+
+    def _build_specific_watch_reason(self, hit: KolHit, post: TweetRecord) -> str:
+        lowered = (post.text or "").lower()
+        if any(keyword in lowered for keyword in ["sec", "etf", "approval", "regulation", "监管"]):
+            return "后续重点看监管表态是否继续偏 pro-innovation，以及申请、审批和市场预期是否形成持续催化。"
+        if any(keyword in lowered for keyword in ["yield", "stablecoin", "morpho", "spark", "apy", "收益"]):
+            return "后续重点看产品是否继续扩张、流动性和用户采用是否上来，以及收益机制能否证明自己不是短期营销。"
+        if any(keyword in lowered for keyword in ["btc", "eth", "uptrend", "breakout", "support", "resistance", "cycle", "结构"]):
+            return "后续重点看价格结构是否延续、关键支撑阻力位是否被确认，以及同一观点是否被更多交易派账号共振。"
+        if any(keyword in lowered for keyword in ["adoption", "treasury", "institution", "philippines"]):
+            return "后续重点看 adoption 是否继续扩散到更多渠道或机构主体，而不是停留在单条叙事表达。"
+        return "后续重点看这条观点是否会演变成连续输出、跨账号共识或真正的数据/产品验证。"
+
+    @staticmethod
+    def _is_vague_statement(text: str) -> bool:
+        lowered = text.lower().strip()
+        vague_patterns = [
+            "继续观察",
+            "线索跟踪",
+            "不要下重结论",
+            "值得继续跟踪",
+            "建议继续观察",
+            "更适合把它当作线索",
+            "信息密度和后续跟踪价值都相对更高",
+            "follow-up",
+            "keep watching",
+            "wait and see",
+        ]
+        return any(pattern in lowered for pattern in vague_patterns)
 
     def _select_posts_for_report(self, hit: KolHit) -> list[TweetRecord]:
         informative_posts = [

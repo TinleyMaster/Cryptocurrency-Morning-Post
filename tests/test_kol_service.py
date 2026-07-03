@@ -237,3 +237,64 @@ def test_select_posts_for_report_prefers_informative_posts_over_latest_reply():
 
     assert selected_posts[0].id == "eth_thesis"
     assert all(post.id != "latest_reply" for post in selected_posts)
+
+
+def test_is_informative_post_filters_pure_emotion_post():
+    service = KolService.__new__(KolService)
+    service.settings = SimpleNamespace(timezone="Asia/Shanghai")
+    service.deepseek = DummyDeepSeek()
+    service.logger = object()
+
+    hit = KolHit(
+        group_name="华语头部大V",
+        username="thankUcrypto",
+        role="中文交易博主",
+        category="交易 / 情绪",
+        posts=[],
+    )
+    post = TweetRecord(
+        id="emotion_only",
+        text="不是黄金时代 廉价机票 放下手机 相互拥抱吗 怎么特么的还在跌",
+        author_username="thankUcrypto",
+        created_at=datetime(2026, 7, 3, 2, 0, tzinfo=timezone.utc),
+        like_count=100,
+        retweet_count=5,
+        reply_count=2,
+        quote_count=0,
+    )
+
+    assert service._is_informative_post(post, hit) is False
+
+
+def test_finalize_ai_output_rewrites_vague_judgement_and_watch_reason():
+    service = KolService.__new__(KolService)
+    service.settings = SimpleNamespace(timezone="Asia/Shanghai")
+    service.deepseek = DummyDeepSeek()
+    service.logger = object()
+
+    hit = KolHit(
+        group_name="宏观 / ETF / DeFi 增量线索",
+        username="EricBalchunas",
+        role="ETF分析师",
+        category="ETF / 机构流向",
+        posts=[],
+    )
+    post = TweetRecord(
+        id="etf_signal",
+        text="SEC is signaling a more pro-innovation stance toward new ETF structures while trying to avoid copycat filings cutting the line.",
+        author_username="EricBalchunas",
+        created_at=datetime(2026, 7, 3, 1, 0, tzinfo=timezone.utc),
+        like_count=300,
+        retweet_count=40,
+        reply_count=15,
+        quote_count=5,
+    )
+
+    judgement = service._finalize_judgement("建议继续观察，不要下重结论。", hit, post)
+    watch_reason = service._finalize_watch_reason("值得继续跟踪后续是否强化观点。", hit, post)
+
+    assert "继续观察" not in judgement
+    assert "不要下重结论" not in judgement
+    assert "监管" in judgement or "审批" in judgement or "制度" in judgement
+    assert "继续观察" not in watch_reason
+    assert "审批" in watch_reason or "监管" in watch_reason or "pro-innovation" in watch_reason
