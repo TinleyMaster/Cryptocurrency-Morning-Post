@@ -752,3 +752,20 @@ def test_is_informative_post_accepts_ticker_heavy_portfolio_post():
     )
 
     assert service._is_informative_post(post, hit) is True
+
+
+def test_is_post_in_window_accepts_date_precision_posts_on_boundary_day():
+    service = KolService.__new__(KolService)
+    post = TweetRecord(
+        id="date_only",
+        text="macro post",
+        author_username="PhyrexNi",
+        created_at=datetime(2026, 7, 2, 0, 0, tzinfo=timezone.utc),
+        created_at_precision="date",
+    )
+
+    now_dt = datetime(2026, 7, 3, 14, 21, tzinfo=timezone.utc).astimezone(
+        timezone.utc
+    )
+
+    assert service._is_post_in_window(post, now_dt) is True

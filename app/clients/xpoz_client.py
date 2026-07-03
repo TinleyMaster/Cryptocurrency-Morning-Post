@@ -29,6 +29,7 @@ class XpozClient:
                 "id",
                 "text",
                 "author_username",
+                "created_at",
                 "created_at_date",
                 "like_count",
                 "retweet_count",
@@ -49,6 +50,7 @@ class XpozClient:
                 "id",
                 "text",
                 "author_username",
+                "created_at",
                 "created_at_date",
                 "like_count",
                 "retweet_count",
@@ -88,14 +90,16 @@ class XpozClient:
 
     @staticmethod
     def _to_tweet_record(item: Any) -> TweetRecord:
-        created_at = XpozClient._parse_datetime(
-            getattr(item, "created_at", None) or getattr(item, "created_at_date", None)
-        )
+        raw_created_at = getattr(item, "created_at", None)
+        raw_created_at_date = getattr(item, "created_at_date", None)
+        created_at = XpozClient._parse_datetime(raw_created_at or raw_created_at_date)
+        created_at_precision = "datetime" if raw_created_at else "date"
         return TweetRecord(
             id=str(getattr(item, "id", "")),
             text=getattr(item, "text", "") or "",
             author_username=getattr(item, "author_username", "") or "",
             created_at=created_at,
+            created_at_precision=created_at_precision,
             like_count=int(getattr(item, "like_count", 0) or 0),
             retweet_count=int(getattr(item, "retweet_count", 0) or 0),
             reply_count=int(getattr(item, "reply_count", 0) or 0),

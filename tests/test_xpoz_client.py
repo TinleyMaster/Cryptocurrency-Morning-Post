@@ -10,6 +10,7 @@ class FakeTwitterPost:
         text: str,
         author_username: str,
         created_at_date: str,
+        created_at: str | None = None,
         like_count: int = 0,
         retweet_count: int = 0,
         reply_count: int = 0,
@@ -23,7 +24,7 @@ class FakeTwitterPost:
         self.retweet_count = retweet_count
         self.reply_count = reply_count
         self.quote_count = quote_count
-        self.created_at = None
+        self.created_at = created_at
 
 
 class FakePaginatedResult:
@@ -40,6 +41,7 @@ class FakeTwitterNamespace:
                     "post-text",
                     identifier,
                     "2026-06-30T00:00:00.000Z",
+                    created_at="2026-06-30T08:30:00.000Z",
                     like_count=10,
                     retweet_count=2,
                     reply_count=3,
@@ -82,6 +84,8 @@ def test_xpoz_client_maps_sdk_result(monkeypatch):
     assert posts[0].like_count == 10
     assert isinstance(posts[0].created_at, datetime)
     assert posts[0].created_at.tzinfo is not None
+    assert posts[0].created_at_precision == "datetime"
     assert hydrated[0].text == "hydrated-post"
     assert hydrated[0].quote_count == 2
     assert hydrated[0].created_at.tzinfo is not None
+    assert hydrated[0].created_at_precision == "date"

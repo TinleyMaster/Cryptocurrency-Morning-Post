@@ -95,7 +95,7 @@ class KolService:
                 [
                     post
                     for post in posts
-                    if is_in_last_24h(post.created_at, now_dt)
+                    if self._is_post_in_window(post, now_dt)
                     and (post.text or "").strip()
                 ],
                 key=lambda item: item.created_at,
@@ -869,6 +869,14 @@ class KolService:
             + min(len(post.text or ""), 300)
             + len(hit.posts) * 30
         )
+
+    def _is_post_in_window(self, post: TweetRecord, now_dt: datetime) -> bool:
+        if post.created_at_precision != "date":
+            return is_in_last_24h(post.created_at, now_dt)
+
+        start_dt, end_dt = get_last_24h_window(now_dt)
+        local_post_date = post.created_at.astimezone(now_dt.tzinfo).date()
+        return start_dt.date() <= local_post_date <= end_dt.date()
 
     def _is_informative_post(self, post: TweetRecord, hit: KolHit) -> bool:
         text = re.sub(r"\s+", " ", post.text or "").strip()
