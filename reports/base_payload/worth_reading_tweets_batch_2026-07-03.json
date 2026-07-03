@@ -1,0 +1,40 @@
+{
+  "fields": [
+    "tweet_id",
+    "report_date",
+    "kol",
+    "tweet_url",
+    "tweet_created_at",
+    "text",
+    "tags",
+    "topic",
+    "asset",
+    "type_tag",
+    "likes",
+    "retweets",
+    "replies",
+    "quotes",
+    "crawl_status",
+    "crawled_at"
+  ],
+  "rows": [
+    {
+      "tweet_id": "2072837236790284594",
+      "report_date": "2026-07-03",
+      "kol": "CredibleCrypto",
+      "tweet_url": "https://x.com/CredibleCrypto/status/2072837236790284594",
+      "tweet_created_at": "2026-07-03T00:00:00",
+      "text": "Yea yea I've been hearing the \\\"ETH is dead\\\" FUD for literally years now.\\n\\nThe last time people were screaming this on CT a year ago I made a Youtube video explaining exactly why it WASN'T dead, literally 5 DAYS before the pico-bottom (check the dates) after which we rallied 255% to NEW ALL TIME HIGHS.\\n\\nFunny enough, we are trading at almost exactly the same price now, I am hearing the same thing again, and we are gonna RUN IT BACK but this time we don't just eclipse prior ATH we are gonna smash far past them.\\n\\nWill make a new Youtube vid soon to break down exactly why, just like last time.\\n\\n$ETH season soon.",
+      "tags": "#KOL/CredibleCrypto, #Topic/BTC, #Type/MarketFramework, #Date/2026-07-03",
+      "topic": "BTC",
+      "asset": "",
+      "type_tag": "MarketFramework",
+      "likes": 144,
+      "retweets": 7,
+      "replies": 27,
+      "quotes": 0,
+      "crawl_status": "ok",
+      "crawled_at": "2026-07-03T09:15:01.413545+08:00"
+    }
+  ]
+}
