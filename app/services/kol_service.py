@@ -31,6 +31,7 @@ class KolService:
     MAX_WORTH_READING_ITEMS = 15
     MAX_WORTH_READING_PER_AUTHOR = 2
     MIN_INFORMATIVE_POST_SCORE = 180
+    MIN_REPORT_POSTS_PER_AUTHOR = 4
 
     def __init__(self, settings, logger) -> None:
         self.settings = settings
@@ -363,7 +364,7 @@ class KolService:
                     hit = hit_lookup.get(username)
                     if not hit or username in rendered_usernames:
                         continue
-                    post = self._pick_post(hit, candidate.get("tweet_id"))
+                    post = self._pick_informative_post(hit, candidate.get("tweet_id"))
                     rendered_hits.append(
                         self._render_hit_block(
                             hit=hit,
@@ -460,7 +461,7 @@ class KolService:
                 hit = hit_lookup.get(username)
                 if not hit:
                     continue
-                post = self._pick_post(hit, candidate.get("tweet_id"))
+                post = self._pick_informative_post(hit, candidate.get("tweet_id"))
                 tweet_url = self._tweet_url(username, post.id)
                 if (
                     tweet_url in seen_urls
@@ -577,6 +578,7 @@ class KolService:
             "3. 每个 group 只保留最有信息密度的账号，不必覆盖全部命中账号。"
             "4. worth_reading 优先覆盖全部高信息量帖子，不要机械限制在 8 条；通常输出 6-15 条，并且 tweet_id 必须来自输入数据。"
             "5. tags 使用 #KOL/#Topic/#Asset/#Type/#Date 体系。"
+            "6. 明确排除 reply/repost/纯闲聊/表情包/体育或生活类跑题内容，优先选择原生观点表达、框架帖、机制分析、政策解读、产品进展。"
         )
 
     def _report_user_prompt(
@@ -615,7 +617,7 @@ class KolService:
                             "engagement": self._post_engagement(post),
                             "text": self._summarize_text(post.text, 320),
                         }
-                        for post in hit.posts[:6]
+                        for post in self._select_posts_for_report(hit)
                     ],
                 }
                 for hit in hits
@@ -797,6 +799,10 @@ class KolService:
         text = re.sub(r"\s+", " ", post.text or "").strip()
         if len(text) < 40:
             return False
+        if self._looks_like_reply_or_repost(text):
+            return False
+        if self._looks_like_low_signal_smalltalk(text):
+            return False
 
         score = self._post_signal_score(post, hit)
         if score >= self.MIN_INFORMATIVE_POST_SCORE:
@@ -827,6 +833,64 @@ class KolService:
         ]
         return any(keyword in lowered for keyword in signal_keywords)
 
+    @staticmethod
+    def _looks_like_reply_or_repost(text: str) -> bool:
+        lowered = text.lower().strip()
+        if lowered.startswith("rt @"):
+            return True
+        if lowered.startswith("@"):
+            return True
+        if lowered.startswith("repost @") or lowered.startswith("reposted @"):
+            return True
+        if text.count("@") >= 2 and len(text) < 180:
+            return True
+        return False
+
+    @staticmethod
+    def _looks_like_low_signal_smalltalk(text: str) -> bool:
+        lowered = text.lower()
+        smalltalk_patterns = [
+            "gm",
+            "gn",
+            "haha",
+            "lol",
+            "lmao",
+            "that’s fair",
+            "that's fair",
+            "wild haha",
+            "so shaky",
+            "buff",
+            "拥抱吗",
+            "还在跌",
+        ]
+        crypto_keywords = [
+            "btc",
+            "bitcoin",
+            "eth",
+            "ethereum",
+            "etf",
+            "sec",
+            "stablecoin",
+            "yield",
+            "macro",
+            "nonfarm",
+            "rates",
+            "inflation",
+            "solana",
+            "ondo",
+            "near",
+            "tao",
+            "eigen",
+            "morpho",
+            "spark",
+            "treasury",
+            "rwa",
+            "ai",
+        ]
+        if any(keyword in lowered for keyword in crypto_keywords):
+            return False
+        return any(pattern in lowered for pattern in smalltalk_patterns)
+
     def _hit_signal_score(self, hit: KolHit) -> int:
         return (
             sum(self._post_engagement(post) for post in hit.posts)
@@ -839,6 +903,35 @@ class KolService:
             if post.id == tweet_id_str:
                 return post
         return max(hit.posts, key=lambda item: self._post_signal_score(item, hit))
+
+    def _pick_informative_post(self, hit: KolHit, tweet_id: Any) -> TweetRecord:
+        tweet_id_str = str(tweet_id or "").strip()
+        informative_posts = self._select_posts_for_report(hit)
+        for post in informative_posts:
+            if post.id == tweet_id_str:
+                return post
+        for post in hit.posts:
+            if post.id == tweet_id_str and self._is_informative_post(post, hit):
+                return post
+        if informative_posts:
+            return informative_posts[0]
+        return self._pick_post(hit, tweet_id)
+
+    def _select_posts_for_report(self, hit: KolHit) -> list[TweetRecord]:
+        informative_posts = [
+            post for post in hit.posts if self._is_informative_post(post, hit)
+        ]
+        if not informative_posts:
+            return sorted(
+                hit.posts,
+                key=lambda item: self._post_signal_score(item, hit),
+                reverse=True,
+            )[: self.MIN_REPORT_POSTS_PER_AUTHOR]
+        return sorted(
+            informative_posts,
+            key=lambda item: self._post_signal_score(item, hit),
+            reverse=True,
+        )[: self.MIN_REPORT_POSTS_PER_AUTHOR]
 
     def _engagement_label(self, posts: list[TweetRecord]) -> str:
         total = sum(self._post_engagement(post) for post in posts)

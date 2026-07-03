@@ -147,3 +147,93 @@ def test_build_worth_reading_prefers_informative_posts_without_external_limit():
 
     assert len(worth_reading) == 1
     assert worth_reading[0]["tweet_url"].endswith("/high")
+
+
+def test_build_worth_reading_skips_reply_style_posts_and_falls_back_to_real_thesis():
+    service = KolService.__new__(KolService)
+    service.settings = SimpleNamespace(timezone="Asia/Shanghai")
+    service.deepseek = DummyDeepSeek()
+    service.logger = object()
+
+    hit = KolHit(
+        group_name="合规/美国监管/ETF赛道",
+        username="EricBalchunas",
+        role="ETF分析师",
+        category="ETF / 机构流向",
+        posts=[
+            TweetRecord(
+                id="reply_like",
+                text="@chromage2 That's fair. Embiid is so shaky",
+                author_username="EricBalchunas",
+                created_at=datetime(2026, 7, 3, 2, 0, tzinfo=timezone.utc),
+                like_count=900,
+                retweet_count=10,
+                reply_count=20,
+                quote_count=1,
+            ),
+            TweetRecord(
+                id="real_signal",
+                text="SEC is signaling a more pro-innovation stance toward new ETF structures while trying to avoid copycat filings cutting the line.",
+                author_username="EricBalchunas",
+                created_at=datetime(2026, 7, 3, 1, 0, tzinfo=timezone.utc),
+                like_count=300,
+                retweet_count=40,
+                reply_count=15,
+                quote_count=5,
+            ),
+        ],
+    )
+
+    worth_reading = service._build_worth_reading(
+        ai_payload={
+            "worth_reading": [
+                {"username": "EricBalchunas", "tweet_id": "reply_like", "tags": ["#KOL/EricBalchunas", "#Topic/ETF"]}
+            ]
+        },
+        hit_lookup={"EricBalchunas": hit},
+        now_dt=datetime(2026, 7, 3, 10, 0, tzinfo=timezone.utc),
+    )
+
+    assert len(worth_reading) == 1
+    assert worth_reading[0]["tweet_url"].endswith("/real_signal")
+
+
+def test_select_posts_for_report_prefers_informative_posts_over_latest_reply():
+    service = KolService.__new__(KolService)
+    service.settings = SimpleNamespace(timezone="Asia/Shanghai")
+    service.deepseek = DummyDeepSeek()
+    service.logger = object()
+
+    hit = KolHit(
+        group_name="交易盘面/技术分析",
+        username="CredibleCrypto",
+        role="周期技术分析师",
+        category="技术分析 / 周期",
+        posts=[
+            TweetRecord(
+                id="latest_reply",
+                text="@andrew658202 Right, wild haha.",
+                author_username="CredibleCrypto",
+                created_at=datetime(2026, 7, 3, 3, 0, tzinfo=timezone.utc),
+                like_count=200,
+                retweet_count=5,
+                reply_count=8,
+                quote_count=0,
+            ),
+            TweetRecord(
+                id="eth_thesis",
+                text="ETH is not dead. Sentiment looks similar to the last major bottom and an ETH season can still return from this setup.",
+                author_username="CredibleCrypto",
+                created_at=datetime(2026, 7, 3, 2, 0, tzinfo=timezone.utc),
+                like_count=350,
+                retweet_count=30,
+                reply_count=18,
+                quote_count=4,
+            ),
+        ],
+    )
+
+    selected_posts = service._select_posts_for_report(hit)
+
+    assert selected_posts[0].id == "eth_thesis"
+    assert all(post.id != "latest_reply" for post in selected_posts)
