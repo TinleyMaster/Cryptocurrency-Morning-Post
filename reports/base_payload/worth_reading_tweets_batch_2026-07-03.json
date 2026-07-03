@@ -19,24 +19,6 @@
   ],
   "rows": [
     {
-      "tweet_id": "2072865847761097111",
-      "report_date": "2026-07-03",
-      "kol": "EricBalchunas",
-      "tweet_url": "https://x.com/EricBalchunas/status/2072865847761097111",
-      "tweet_created_at": "2026-07-03T00:00:00+00:00",
-      "text": "RT @HaterReport: VAR on the way to destroy a nation’s hopes and dreams every World Cup match https://t.co/Gl9PhNNNTm",
-      "tags": "#KOL/EricBalchunas, #Topic/ETF, #Type/Framework, #Date/2026-07-03",
-      "topic": "ETF",
-      "asset": "",
-      "type_tag": "Framework",
-      "likes": 0,
-      "retweets": 574,
-      "replies": 0,
-      "quotes": 0,
-      "crawl_status": "ok",
-      "crawled_at": "2026-07-03T11:09:31.619406+08:00"
-    },
-    {
       "tweet_id": "2072837236790284594",
       "report_date": "2026-07-03",
       "kol": "CredibleCrypto",
@@ -47,12 +29,12 @@
       "topic": "ETH",
       "asset": "ETH",
       "type_tag": "Framework",
-      "likes": 263,
-      "retweets": 37,
+      "likes": 279,
+      "retweets": 47,
       "replies": 32,
       "quotes": 0,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-03T11:09:31.619406+08:00"
+      "crawled_at": "2026-07-03T11:30:42.985373+08:00"
     },
     {
       "tweet_id": "2072844377668420051",
@@ -65,12 +47,30 @@
       "topic": "Market",
       "asset": "",
       "type_tag": "Framework",
-      "likes": 175,
+      "likes": 207,
       "retweets": 6,
-      "replies": 33,
+      "replies": 36,
       "quotes": 0,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-03T11:09:31.619406+08:00"
+      "crawled_at": "2026-07-03T11:30:42.985373+08:00"
+    },
+    {
+      "tweet_id": "2072876819511189618",
+      "report_date": "2026-07-03",
+      "kol": "0xTodd",
+      "tweet_url": "https://x.com/0xTodd/status/2072876819511189618",
+      "tweet_created_at": "2026-07-03T00:00:00+00:00",
+      "text": "我还特意去看了一下这个号:\\n\\n这个号的实力克不容小觑奥，她一个号可以轻松养活国内 10-20 个营销号\\n\\n她最近的推文除了 PM 操纵民主之外，还包括：\\n\\n-平行国家实验\\n-爱泼斯坦和 Paypal 黑帮掌握比特币\\n-CIA 控制疫苗\\n-AI 真相法庭篡夺叙事\\n-以色列控制科技和加密\\n-硅谷在推动的新封建君主制度\\n... https://t.co/vHQjaBgdqS",
+      "tags": "#KOL/0xTodd, #Topic/Market, #Type/Framework, #Date/2026-07-03",
+      "topic": "Market",
+      "asset": "",
+      "type_tag": "Framework",
+      "likes": 4,
+      "retweets": 0,
+      "replies": 4,
+      "quotes": 0,
+      "crawl_status": "ok",
+      "crawled_at": "2026-07-03T11:30:42.985373+08:00"
     },
     {
       "tweet_id": "2072857585313579174",
@@ -88,25 +88,7 @@
       "replies": 0,
       "quotes": 0,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-03T11:09:31.619406+08:00"
-    },
-    {
-      "tweet_id": "2072852655425413496",
-      "report_date": "2026-07-03",
-      "kol": "_Checkmatey_",
-      "tweet_url": "https://x.com/_Checkmatey_/status/2072852655425413496",
-      "tweet_created_at": "2026-07-03T00:00:00+00:00",
-      "text": "@TXMCtrades @decodejar Almost always a data error. TXMC is right, and you can safely consider all onchain 'whale' metrics as engagement farming noise, not information.",
-      "tags": "#KOL/_Checkmatey_, #Topic/BTC, #Asset/BTC, #Type/Framework, #Date/2026-07-03",
-      "topic": "BTC",
-      "asset": "BTC",
-      "type_tag": "Framework",
-      "likes": 6,
-      "retweets": 0,
-      "replies": 1,
-      "quotes": 0,
-      "crawl_status": "ok",
-      "crawled_at": "2026-07-03T11:09:31.619406+08:00"
+      "crawled_at": "2026-07-03T11:30:42.985373+08:00"
     }
   ]
 }
