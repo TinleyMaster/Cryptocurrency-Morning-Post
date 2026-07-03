@@ -324,6 +324,41 @@ def test_finalize_ai_output_rewrites_vague_judgement_and_watch_reason():
     )
 
 
+def test_finalize_ai_output_rewrites_generic_empty_judgement_phrase():
+    service = KolService.__new__(KolService)
+    service.settings = SimpleNamespace(timezone="Asia/Shanghai")
+    service.deepseek = DummyDeepSeek()
+    service.logger = object()
+
+    hit = KolHit(
+        group_name="交易盘面/技术分析",
+        username="CredibleCrypto",
+        role="周期技术分析师",
+        category="技术分析 / 周期",
+        posts=[],
+    )
+    post = TweetRecord(
+        id="eth_signal",
+        text='Yea yea I have been hearing the "ETH is dead" FUD for literally years now and ETH season can still come back.',
+        author_username="CredibleCrypto",
+        created_at=datetime(2026, 7, 3, 1, 0, tzinfo=timezone.utc),
+        like_count=300,
+        retweet_count=20,
+        reply_count=10,
+        quote_count=2,
+    )
+
+    judgement = service._finalize_judgement(
+        "这条内容更像对当前市场结构、机制或叙事方向的定性判断，而不是单纯情绪宣泄。",
+        hit,
+        post,
+    )
+
+    assert "定性判断" not in judgement
+    assert "ETH" in judgement
+    assert "错杀" in judgement or "反向" in judgement or "衰退" in judgement
+
+
 def test_build_report_context_excludes_low_signal_accounts_from_body():
     service = KolService.__new__(KolService)
     service.settings = SimpleNamespace(timezone="Asia/Shanghai")
@@ -407,6 +442,72 @@ def test_build_report_context_excludes_low_signal_accounts_from_body():
     assert "thankUcrypto" not in worth_reading_usernames
     assert "thankUcrypto" not in focus_usernames
     assert "thankUcrypto" in context["low_signal_accounts"]
+
+
+def test_build_focus_accounts_uses_investor_useful_reason():
+    service = KolService.__new__(KolService)
+    service.settings = SimpleNamespace(timezone="Asia/Shanghai")
+    service.deepseek = DummyDeepSeek()
+    service.logger = object()
+
+    hit = KolHit(
+        group_name="宏观 / ETF / DeFi 增量线索",
+        username="MonetSupply",
+        role="稳定币研究员",
+        category="稳定币 / 收益",
+        posts=[
+            TweetRecord(
+                id="yield_signal",
+                text="Spark Savings on RobinhoodApp chain shows that stablecoin yield products compete on execution, atomic liquidity, and user experience rather than APY alone.",
+                author_username="MonetSupply",
+                created_at=datetime(2026, 7, 3, 1, 0, tzinfo=timezone.utc),
+                like_count=120,
+                retweet_count=10,
+                reply_count=5,
+                quote_count=1,
+            )
+        ],
+    )
+
+    focus_accounts = service._build_focus_accounts(
+        ai_payload=None,
+        hit_lookup={"MonetSupply": hit},
+        worth_reading=[
+            {
+                "display_name": "@MonetSupply",
+                "tweet_url": "https://x.com/MonetSupply/status/yield_signal",
+                "tags": ["#KOL/MonetSupply", "#Topic/Stablecoin"],
+            }
+        ],
+    )
+
+    assert len(focus_accounts) == 1
+    assert "稳定币" in focus_accounts[0]["reason"] or "收益产品化" in focus_accounts[0]["reason"]
+
+
+def test_align_group_worth_reading_links_keeps_only_selected_urls():
+    service = KolService.__new__(KolService)
+    groups = [
+        {
+            "group_name": "交易盘面/技术分析",
+            "hits": [
+                {"username": "CredibleCrypto", "tweet_url": "https://x.com/CredibleCrypto/status/1"},
+                {"username": "RektCapital", "tweet_url": "https://x.com/rektcapital/status/2"},
+            ],
+        }
+    ]
+    worth_reading = [
+        {
+            "display_name": "@CredibleCrypto",
+            "tweet_url": "https://x.com/CredibleCrypto/status/1",
+            "tags": [],
+        }
+    ]
+
+    service._align_group_worth_reading_links(groups, worth_reading)
+
+    assert groups[0]["hits"][0]["tweet_url"].endswith("/1")
+    assert groups[0]["hits"][1]["tweet_url"] == ""
 
 
 def test_is_informative_post_filters_generic_market_chatter_without_crypto_anchor():

@@ -287,6 +287,7 @@ class KolService:
         worth_reading = self._build_worth_reading(
             ai_payload, informative_hit_lookup, now_dt
         )
+        self._align_group_worth_reading_links(groups, worth_reading)
         focus_accounts = self._build_focus_accounts(
             ai_payload, informative_hit_lookup, worth_reading
         )
@@ -559,9 +560,9 @@ class KolService:
                 focus_accounts.append(
                     {
                         "username": username,
-                        "reason": self._safe_text(
-                            item.get("reason"),
-                            "今天的信息密度和后续跟踪价值都相对更高。",
+                        "reason": self._finalize_focus_reason(
+                            self._safe_text(item.get("reason")),
+                            hit_lookup[username],
                         ),
                     }
                 )
@@ -579,7 +580,10 @@ class KolService:
             focus_accounts.append(
                 {
                     "username": username,
-                    "reason": f"覆盖 `{hit.category}` 相关线索，且 24h 内表达更具代表性。",
+                    "reason": self._build_focus_reason(
+                        hit,
+                        self._pick_informative_post(hit, self._extract_tweet_id(item)),
+                    ),
                 }
             )
             seen.add(username)
@@ -685,8 +689,13 @@ class KolService:
         return dict(grouped)
 
     def _fallback_group_summary(self, group_name: str, hits: list[KolHit]) -> str:
+        themes = self._theme_labels(hits)
+        if len(themes) >= 2:
+            return f"这一组今天主要围绕 `{themes[0]}` 和 `{themes[1]}` 展开，整体更偏结构判断、制度增量或产品化线索。"
+        if themes:
+            return f"这一组今天的主要增量集中在 `{themes[0]}`，更适合当作判断后续交易主线的线索源。"
         topics = self._topics_overview(hits)
-        return f"这一组今天最有信息量的内容集中在 {topics}，提供的主要是结构判断、制度进展或产品化线索，而不是单纯情绪表达。"
+        return f"这一组今天最有信息量的内容集中在 {topics}，提供的主要是结构判断、制度进展或产品化线索。"
 
     def _fallback_three_points(self, hits: list[KolHit]) -> list[str]:
         if not hits:
@@ -700,18 +709,44 @@ class KolService:
     def _fallback_consensus(self, hits: list[KolHit]) -> list[str]:
         if not hits:
             return []
-        return [
-            f"大部分高信号表达都围绕 {self._topics_overview(hits)} 展开，而不是全面 risk-on 或全面 risk-off。",
-            "相比空泛口号，KOL 更愿意讨论结构位置、制度窗口、收益机制和产品化进展。",
-        ]
+        lines: list[str] = []
+        theme_counts = self._theme_counts(hits)
+        if self._theme_total(theme_counts, ["ETH", "BTC", "Altcoins", "HYPE"]) > 0:
+            lines.append(
+                "大多数高信号观点并不支持“市场已经走坏”的简单结论，更常见的是：`BTC/ETH/山寨` 仍有结构性机会，但要分资产、分阶段看。"
+            )
+        if (
+            self._theme_total(
+                theme_counts, ["ETF", "Macro", "Stablecoin", "Yield", "Adoption"]
+            )
+            > 0
+        ):
+            lines.append(
+                "制度与产品层面的增量比空泛口号更受关注，尤其是 `ETF/监管窗口`、`稳定币收益机制` 和 `链上产品分发`。"
+            )
+        if any("宏观" in hit.group_name or "华语" in hit.group_name for hit in hits):
+            lines.append(
+                "华语和宏观交易派普遍强调 `事件日历 + 仓位纪律 + 价格带执行`，而不是直接给单边终局判断。"
+            )
+        return lines[:3]
 
     def _fallback_differences(self, hits: list[KolHit]) -> list[str]:
         if not hits:
             return []
-        return [
-            "分歧主要在时间尺度上：有人讨论短线执行，有人讨论中长期叙事承接。",
-            "同一资产的看法也常分成两类：一类强调价格结构，一类强调监管、产品或 adoption 变量。",
-        ]
+        lines: list[str] = []
+        theme_counts = self._theme_counts(hits)
+        if self._theme_total(theme_counts, ["ETH", "Altcoins", "HYPE"]) > 0:
+            lines.append(
+                "对 `ETH / 山寨轮动` 的判断分歧最大：一类账号把极端悲观看成反向做多机会，另一类则更强调只有强势资产值得继续跟踪。"
+            )
+        if self._theme_total(theme_counts, ["Macro", "ETF"]) > 0:
+            lines.append(
+                "对 `宏观与监管` 的理解也存在差异：有人把它看成风险资产催化，有人更担心审批节奏和通胀路径拖慢兑现速度。"
+            )
+        lines.append(
+            "表达方式上也分成两派：一派偏 `图表结构 / 周期框架`，另一派偏 `制度窗口 / 产品机制`，两者的时间尺度并不一样。"
+        )
+        return lines[:3]
 
     def _infer_tags(self, hit: KolHit, post: TweetRecord, now_dt) -> list[str]:
         tags = [f"#KOL/{hit.username}"]
@@ -1224,6 +1259,15 @@ class KolService:
             return informative_posts[0]
         return self._pick_post(hit, tweet_id)
 
+    def _align_group_worth_reading_links(
+        self, groups: list[dict[str, Any]], worth_reading: list[dict[str, Any]]
+    ) -> None:
+        selected_urls = {item["tweet_url"] for item in worth_reading}
+        for group in groups:
+            for hit in group.get("hits", []):
+                if hit.get("tweet_url") not in selected_urls:
+                    hit["tweet_url"] = ""
+
     def _finalize_core(self, candidate: str, hit: KolHit, post: TweetRecord) -> str:
         if candidate and not self._is_vague_statement(candidate):
             return candidate
@@ -1243,58 +1287,113 @@ class KolService:
             return candidate
         return self._build_specific_watch_reason(hit, post)
 
+    def _finalize_focus_reason(self, candidate: str, hit: KolHit) -> str:
+        if candidate and not self._is_vague_statement(candidate):
+            return candidate
+        return self._build_focus_reason(hit, self._pick_informative_post(hit, None))
+
     def _build_specific_core(self, hit: KolHit, post: TweetRecord) -> str:
-        text = self._summarize_text(post.text, 180)
-        topics, assets, type_tags = self._detect_tags(hit, post)
-        topic_text = " / ".join(topics[:2]) if topics else hit.category
-        asset_text = "、".join(assets[:2]) if assets else ""
-        if asset_text:
-            return (
-                f"围绕 `{topic_text}` 展开，重点涉及 `{asset_text}`，核心表达是：{text}"
-            )
-        return f"围绕 `{topic_text}` 展开，核心表达是：{text}"
+        lowered = (post.text or "").lower()
+        if any(
+            keyword in lowered for keyword in ["not dead", "eth is dead", "eth season"]
+        ):
+            return "强烈反驳 `ETH 已死` 叙事，认为当前的极端悲观更像阶段性错杀，而不是中期趋势被证伪。"
+        if any(
+            keyword in lowered
+            for keyword in ["hype", "breakdown", "uptrend", "support"]
+        ):
+            return "继续用 `结构位 / 走势延续` 的框架看盘，认为当前更像趋势中的整理，而不是主升结构已经结束。"
+        if any(
+            keyword in lowered
+            for keyword in ["cycle", "four year", "4 year", "monthly", "bull market"]
+        ):
+            return "继续把当前波动放回 `大周期 / 四年周期` 框架里解释，强调回撤并不自动等于周期失效。"
+        if any(
+            keyword in lowered
+            for keyword in ["sec", "etf", "approval", "copycat", "innovation"]
+        ):
+            return "围绕 `SEC 对创新型 ETF` 的态度展开，核心信息是监管并非一味压制，而是在管理审批秩序和新类别放行节奏。"
+        if any(
+            keyword in lowered
+            for keyword in [
+                "stablecoin",
+                "yield",
+                "morpho",
+                "spark",
+                "ousd",
+                "earn",
+                "savings",
+            ]
+        ):
+            return "围绕 `稳定币收益机制 / 链上收益产品` 展开，重点不在口号，而在收益分配、流动性和真实用户体验。"
+        if any(
+            keyword in lowered
+            for keyword in ["treasury", "institution", "adoption", "philippines"]
+        ):
+            return "继续强化 `机构采用 / 平台扩张 / 全球渗透` 叙事，把单条新闻解释成 adoption 持续推进的证据。"
+        if any(
+            keyword in lowered
+            for keyword in ["near", "tao", "ondo", "eigen", "portfolio", "allocation"]
+        ):
+            return "公开自己的 `组合偏好与轮动方向`，说明资金关注点仍集中在 AI、RWA 和强势山寨资产，而非全面扩散。"
+        if any(
+            keyword in lowered
+            for keyword in ["nonfarm", "inflation", "rates", "fomc", "macro"]
+        ):
+            return "把 `非农 / 利率 / 通胀 / 风险资产表现` 放进同一交易框架里看，重点是给出事件窗口与价格带之间的映射。"
+        text = self._summarize_text(post.text, 160)
+        return f"核心信息是：{text}"
 
     def _build_specific_judgement(self, hit: KolHit, post: TweetRecord) -> str:
         lowered = (post.text or "").lower()
         if any(
-            keyword in lowered
-            for keyword in [
-                "not dead",
-                "bull",
-                "uptrend",
-                "breakout",
-                "upside",
-                "继续上行",
-                "转强",
-            ]
+            keyword in lowered for keyword in ["not dead", "eth is dead", "eth season"]
         ):
-            return "整体偏多或偏结构性乐观，说明发帖者认为当前并非趋势破坏，而是仍存在继续上行或情绪修复空间。"
+            return "`ETH` 更像被极端悲观情绪错杀，而不是结构性衰退；如果后续相对强弱改善，这类观点对反向布局更有参考价值。"
         if any(
             keyword in lowered
-            for keyword in [
-                "bear",
-                "downside",
-                "risk",
-                "pressure",
-                "压制",
-                "回调",
-                "错杀",
-            ]
+            for keyword in ["hype", "uptrend", "support", "breakdown", "breakout"]
         ):
-            return "偏谨慎但不是纯看空，更像是在提示阶段性压力、节奏风险或市场定价与现实之间仍有偏差。"
+            return "偏交易结构派的乐观判断，意味着只要关键结构位不破，当前更像健康整理而不是趋势反转。"
+        if any(
+            keyword in lowered
+            for keyword in ["cycle", "four year", "4 year", "bull market"]
+        ):
+            return "偏 `周期框架延续`，核心意思是当前回撤仍可被视作牛市中的正常波动，而不是大逻辑已经被证伪。"
         if any(
             keyword in lowered
             for keyword in ["sec", "etf", "approval", "regulation", "监管"]
         ):
-            return "这更像制度与监管层面的增量信息，影响不在短线情绪，而在后续审批节奏和市场预期重定价。"
+            return "偏制度增量解读，短线未必立刻兑现，但如果审批边际转松，会先重塑市场对 ETF 和监管路径的预期。"
         if any(
             keyword in lowered
-            for keyword in ["yield", "stablecoin", "morpho", "spark", "product", "收益"]
+            for keyword in [
+                "yield",
+                "stablecoin",
+                "morpho",
+                "spark",
+                "product",
+                "ousd",
+                "收益",
+            ]
         ):
-            return "这更像产品化和收益机制层面的增量，重点不只是概念，而是实际分发、流动性和规模化能力。"
-        return (
-            "这条内容更像对当前市场结构、机制或叙事方向的定性判断，而不是单纯情绪宣泄。"
-        )
+            return "偏产品化增量判断，重点不是喊概念，而是这类收益机制若被验证，会同时利多稳定币、借贷协议和分发平台。"
+        if any(
+            keyword in lowered
+            for keyword in ["treasury", "institution", "adoption", "philippines"]
+        ):
+            return "偏中长期 adoption 视角，说明相关主体在把行业故事从交易竞争推进到真实用户覆盖和资金承接。"
+        if any(
+            keyword in lowered
+            for keyword in ["near", "tao", "ondo", "eigen", "portfolio", "allocation"]
+        ):
+            return "偏结构轮动思路，不支持全面山寨普涨，但支持强资产继续获得相对收益，弱势标的需要重新筛选。"
+        if any(
+            keyword in lowered
+            for keyword in ["nonfarm", "inflation", "rates", "fomc", "macro"]
+        ):
+            return "偏事件驱动交易视角，结论不是一味看多或看空，而是强调宏观数据会决定风险资产节奏和仓位管理。"
+        return "这条内容提供的是可交易的框架或变量，而不是单纯情绪表达，关键在于后续是否被更多账号和价格走势验证。"
 
     def _build_specific_watch_reason(self, hit: KolHit, post: TweetRecord) -> str:
         lowered = (post.text or "").lower()
@@ -1307,7 +1406,7 @@ class KolService:
             keyword in lowered
             for keyword in ["yield", "stablecoin", "morpho", "spark", "apy", "收益"]
         ):
-            return "后续重点看产品是否继续扩张、流动性和用户采用是否上来，以及收益机制能否证明自己不是短期营销。"
+            return "后续重点看 TVL、收益可持续性、用户采用和渠道扩张是否同步改善，这决定它是短期营销还是可持续产品线。"
         if any(
             keyword in lowered
             for keyword in [
@@ -1321,15 +1420,59 @@ class KolService:
                 "结构",
             ]
         ):
-            return "后续重点看价格结构是否延续、关键支撑阻力位是否被确认，以及同一观点是否被更多交易派账号共振。"
+            return "后续重点看关键结构位是否继续成立、相对强弱是否改善，以及同样的看法是否被更多交易派账号共振。"
         if any(
             keyword in lowered
             for keyword in ["adoption", "treasury", "institution", "philippines"]
         ):
-            return "后续重点看 adoption 是否继续扩散到更多渠道或机构主体，而不是停留在单条叙事表达。"
-        return (
-            "后续重点看这条观点是否会演变成连续输出、跨账号共识或真正的数据/产品验证。"
-        )
+            return "后续重点看 adoption 是否从单点新闻扩散到更多地区、渠道或机构主体，以及是否带来真实流量和资金承接。"
+        if any(
+            keyword in lowered
+            for keyword in ["nonfarm", "inflation", "rates", "fomc", "macro"]
+        ):
+            return "后续重点看非农、通胀、利率决议和美股风险偏好是否与他给出的交易框架一致。"
+        return "后续重点看这条判断能否在价格、资金流向或产品数据上得到验证，而不是只停留在观点层面。"
+
+    def _build_focus_reason(self, hit: KolHit, post: TweetRecord) -> str:
+        lowered = (post.text or "").lower()
+        if any(
+            keyword in lowered
+            for keyword in ["near", "tao", "ondo", "eigen", "portfolio", "allocation"]
+        ):
+            return "兼具组合表达、轮动判断和情绪观察，是今天最完整的交易派样本。"
+        if any(
+            keyword in lowered for keyword in ["not dead", "eth is dead", "eth season"]
+        ):
+            return "给出了最明确的 `ETH 反向乐观` 观点，情绪张力和交易指向都很强。"
+        if any(
+            keyword in lowered
+            for keyword in ["nonfarm", "inflation", "rates", "fomc", "macro"]
+        ):
+            return "把宏观变量、风险资产和关键价格带放进同一框架，属于今天最完整的宏观交易样本。"
+        if any(
+            keyword in lowered for keyword in ["sec", "etf", "approval", "regulation"]
+        ):
+            return "提供了对 `SEC/ETF` 制度窗口最直接的增量信息，值得优先跟踪。"
+        if any(
+            keyword in lowered
+            for keyword in ["yield", "stablecoin", "morpho", "spark", "ousd", "收益"]
+        ):
+            return "代表今天最值得跟踪的 `稳定币 / 链上收益产品化` 线索。"
+        if any(
+            keyword in lowered
+            for keyword in ["cycle", "four year", "4 year", "bull market"]
+        ):
+            return (
+                "给出了最稳定的 `周期框架` 视角，适合用来校验当前波动是否仍在大逻辑内。"
+            )
+        return f"这位账号围绕 `{hit.category}` 给出了今天最具代表性的增量表达。"
+
+    @staticmethod
+    def _extract_tweet_id(item: dict[str, Any]) -> str:
+        tweet_url = str(item.get("tweet_url") or "").strip()
+        if "/status/" in tweet_url:
+            return tweet_url.rsplit("/status/", 1)[-1]
+        return ""
 
     @staticmethod
     def _is_vague_statement(text: str) -> bool:
@@ -1345,6 +1488,9 @@ class KolService:
             "follow-up",
             "keep watching",
             "wait and see",
+            "这条内容更像",
+            "定性判断",
+            "而不是单纯情绪",
         ]
         return any(pattern in lowered for pattern in vague_patterns)
 
@@ -1378,6 +1524,28 @@ class KolService:
             :4
         ]
         return "、".join(f"`{name}`" for name, _ in top_topics)
+
+    def _theme_counts(self, hits: list[KolHit]) -> dict[str, int]:
+        counts: dict[str, int] = defaultdict(int)
+        for hit in hits:
+            post = self._pick_informative_post(hit, None)
+            topics, _, _ = self._detect_tags(hit, post)
+            for topic in topics:
+                counts[topic] += 1
+        return counts
+
+    def _theme_labels(self, hits: list[KolHit]) -> list[str]:
+        counts = self._theme_counts(hits)
+        return [
+            name
+            for name, _ in sorted(counts.items(), key=lambda item: (-item[1], item[0]))[
+                :3
+            ]
+        ]
+
+    @staticmethod
+    def _theme_total(counts: dict[str, int], labels: list[str]) -> int:
+        return sum(counts.get(label, 0) for label in labels)
 
     @staticmethod
     def _summarize_text(text: str | None, limit: int = 120) -> str:
