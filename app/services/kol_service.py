@@ -321,9 +321,9 @@ class KolService:
         if not differences:
             differences = self._fallback_differences(informative_hits)
 
-        one_liner = self._safe_text(
-            ai_payload.get("one_liner") if ai_payload else None,
-            "今天更像是多条结构性叙事并行发酵的一天，而不是单一方向的全面共识。",
+        one_liner = self._finalize_one_liner(
+            self._safe_text(ai_payload.get("one_liner") if ai_payload else None),
+            informative_hits,
         )
 
         return {
@@ -1466,6 +1466,46 @@ class KolService:
                 "给出了最稳定的 `周期框架` 视角，适合用来校验当前波动是否仍在大逻辑内。"
             )
         return f"这位账号围绕 `{hit.category}` 给出了今天最具代表性的增量表达。"
+
+    def _finalize_one_liner(self, candidate: str, hits: list[KolHit]) -> str:
+        if candidate and not self._is_vague_statement(candidate):
+            return candidate
+        return self._build_one_liner(hits)
+
+    def _build_one_liner(self, hits: list[KolHit]) -> str:
+        if not hits:
+            return "今天没有拿到足够的高信号帖子，优先排查抓取链路和样本命中情况。"
+
+        theme_counts = self._theme_counts(hits)
+        has_price_structure = (
+            self._theme_total(theme_counts, ["BTC", "ETH", "Altcoins", "HYPE"]) > 0
+        )
+        has_policy = self._theme_total(theme_counts, ["ETF", "Macro"]) > 0
+        has_product = (
+            self._theme_total(theme_counts, ["Stablecoin", "Yield", "Adoption"]) > 0
+        )
+
+        if has_price_structure and has_policy and has_product:
+            return "今日核心不是单边 risk-on，而是三条主线并行：`BTC/ETH 结构与轮动预期`、`ETF/监管窗口`、`稳定币与链上收益产品化`。"
+        if has_price_structure and has_policy:
+            return "今日核心是 `BTC/ETH 结构判断` 与 `宏观/监管催化` 的交叉验证，交易上更像等确认而不是直接追单边。"
+        if has_price_structure and has_product:
+            return "今日更值得看的不是情绪，而是 `BTC/ETH/山寨结构` 能否继续转强，以及 `稳定币/链上收益产品` 是否证明真实需求。"
+        if has_policy and has_product:
+            return "今日增量主要不在价格本身，而在 `ETF/监管边际变化` 和 `稳定币/链上收益产品化` 两条制度与产品线。"
+        if has_price_structure:
+            return "今日最有信息量的内容仍集中在 `BTC/ETH/山寨结构判断`，核心不是终局结论，而是哪些资产仍保有相对强势。"
+        if has_policy:
+            return "今日最值得跟踪的是 `ETF/监管窗口` 的边际变化，这比短线情绪更容易决定后续预期重定价。"
+        if has_product:
+            return "今日核心在线上产品和收益机制，重点是 `稳定币/链上收益` 能否从叙事走向真实分发和用户采用。"
+
+        top_themes = self._theme_labels(hits)
+        if len(top_themes) >= 2:
+            return f"今日更值得看的不是情绪，而是 `{top_themes[0]}` 与 `{top_themes[1]}` 这两条主线能否继续获得跨账号共振。"
+        if top_themes:
+            return f"今日最有信息量的主线集中在 `{top_themes[0]}`，后续关键看这条叙事能否继续扩散到更多账号和价格表现。"
+        return "今日更值得看的不是情绪，而是高信号账号给出的主线判断能否被后续价格和数据验证。"
 
     @staticmethod
     def _extract_tweet_id(item: dict[str, Any]) -> str:

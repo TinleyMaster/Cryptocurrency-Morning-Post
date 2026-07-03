@@ -122,6 +122,106 @@ def test_build_report_context_falls_back_without_ai():
     assert context["focus_accounts"][0]["username"] == "saylor"
 
 
+def test_build_report_context_rewrites_generic_one_liner():
+    service = KolService.__new__(KolService)
+    service.settings = SimpleNamespace(timezone="Asia/Shanghai")
+    service.deepseek = DummyDeepSeek()
+    service.logger = object()
+
+    profiles = [
+        KolProfile(
+            username="CredibleCrypto",
+            role="周期技术分析师",
+            category="技术分析 / 周期",
+            group_name="交易盘面/技术分析",
+        ),
+        KolProfile(
+            username="EricBalchunas",
+            role="ETF分析师",
+            category="ETF / 机构流向",
+            group_name="合规/美国监管/ETF赛道",
+        ),
+        KolProfile(
+            username="MonetSupply",
+            role="稳定币研究员",
+            category="稳定币 / 收益",
+            group_name="宏观 / ETF / DeFi 增量线索",
+        ),
+    ]
+    hits = [
+        KolHit(
+            group_name="交易盘面/技术分析",
+            username="CredibleCrypto",
+            role="周期技术分析师",
+            category="技术分析 / 周期",
+            posts=[
+                TweetRecord(
+                    id="eth_thesis",
+                    text="ETH is not dead and an ETH season can still return from this setup.",
+                    author_username="CredibleCrypto",
+                    created_at=datetime(2026, 7, 3, 2, 0, tzinfo=timezone.utc),
+                    like_count=300,
+                    retweet_count=20,
+                    reply_count=10,
+                    quote_count=2,
+                )
+            ],
+        ),
+        KolHit(
+            group_name="合规/美国监管/ETF赛道",
+            username="EricBalchunas",
+            role="ETF分析师",
+            category="ETF / 机构流向",
+            posts=[
+                TweetRecord(
+                    id="etf_signal",
+                    text="SEC is signaling a more pro-innovation stance toward new ETF structures.",
+                    author_username="EricBalchunas",
+                    created_at=datetime(2026, 7, 3, 1, 0, tzinfo=timezone.utc),
+                    like_count=200,
+                    retweet_count=20,
+                    reply_count=10,
+                    quote_count=2,
+                )
+            ],
+        ),
+        KolHit(
+            group_name="宏观 / ETF / DeFi 增量线索",
+            username="MonetSupply",
+            role="稳定币研究员",
+            category="稳定币 / 收益",
+            posts=[
+                TweetRecord(
+                    id="yield_signal",
+                    text="Stablecoin yield products compete on execution, atomic liquidity, and user experience rather than APY alone.",
+                    author_username="MonetSupply",
+                    created_at=datetime(2026, 7, 3, 1, 30, tzinfo=timezone.utc),
+                    like_count=180,
+                    retweet_count=12,
+                    reply_count=6,
+                    quote_count=1,
+                )
+            ],
+        ),
+    ]
+
+    context = service._build_report_context(
+        title="2026-07-03 加密KOL过去24小时监控报告",
+        start_dt=datetime(2026, 7, 2, 10, 0, tzinfo=timezone.utc),
+        end_dt=datetime(2026, 7, 3, 10, 0, tzinfo=timezone.utc),
+        now_dt=datetime(2026, 7, 3, 10, 0, tzinfo=timezone.utc),
+        profiles=profiles,
+        hits=hits,
+        fetched_accounts=[item.username for item in profiles],
+        no_post_accounts=[],
+        fetch_error_accounts=[],
+    )
+
+    assert "结构性叙事并行发酵" not in context["one_liner"]
+    assert "ETF" in context["one_liner"] or "监管" in context["one_liner"]
+    assert "稳定币" in context["one_liner"] or "收益" in context["one_liner"]
+
+
 def test_build_worth_reading_prefers_informative_posts_without_external_limit():
     service = KolService.__new__(KolService)
     service.settings = SimpleNamespace(timezone="Asia/Shanghai")
@@ -482,7 +582,10 @@ def test_build_focus_accounts_uses_investor_useful_reason():
     )
 
     assert len(focus_accounts) == 1
-    assert "稳定币" in focus_accounts[0]["reason"] or "收益产品化" in focus_accounts[0]["reason"]
+    assert (
+        "稳定币" in focus_accounts[0]["reason"]
+        or "收益产品化" in focus_accounts[0]["reason"]
+    )
 
 
 def test_align_group_worth_reading_links_keeps_only_selected_urls():
@@ -491,8 +594,14 @@ def test_align_group_worth_reading_links_keeps_only_selected_urls():
         {
             "group_name": "交易盘面/技术分析",
             "hits": [
-                {"username": "CredibleCrypto", "tweet_url": "https://x.com/CredibleCrypto/status/1"},
-                {"username": "RektCapital", "tweet_url": "https://x.com/rektcapital/status/2"},
+                {
+                    "username": "CredibleCrypto",
+                    "tweet_url": "https://x.com/CredibleCrypto/status/1",
+                },
+                {
+                    "username": "RektCapital",
+                    "tweet_url": "https://x.com/rektcapital/status/2",
+                },
             ],
         }
     ]
