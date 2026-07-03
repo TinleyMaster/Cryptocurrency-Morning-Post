@@ -29,12 +29,12 @@
       "topic": "ETH",
       "asset": "ETH",
       "type_tag": "Framework",
-      "likes": 288,
+      "likes": 322,
       "retweets": 47,
-      "replies": 32,
+      "replies": 34,
       "quotes": 0,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-03T11:58:36.296795+08:00"
+      "crawled_at": "2026-07-03T13:25:44.090783+08:00"
     },
     {
       "tweet_id": "2072844377668420051",
@@ -47,12 +47,12 @@
       "topic": "Market",
       "asset": "",
       "type_tag": "Framework",
-      "likes": 218,
+      "likes": 227,
       "retweets": 6,
-      "replies": 37,
+      "replies": 39,
       "quotes": 0,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-03T11:58:36.296795+08:00"
+      "crawled_at": "2026-07-03T13:25:44.090783+08:00"
     },
     {
       "tweet_id": "2072876819511189618",
@@ -65,12 +65,12 @@
       "topic": "Market",
       "asset": "",
       "type_tag": "Framework",
-      "likes": 5,
+      "likes": 6,
       "retweets": 0,
-      "replies": 5,
+      "replies": 6,
       "quotes": 0,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-03T11:58:36.296795+08:00"
+      "crawled_at": "2026-07-03T13:25:44.090783+08:00"
     },
     {
       "tweet_id": "2072857585313579174",
@@ -88,7 +88,25 @@
       "replies": 0,
       "quotes": 0,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-03T11:58:36.296795+08:00"
+      "crawled_at": "2026-07-03T13:25:44.090783+08:00"
+    },
+    {
+      "tweet_id": "2072885735083102289",
+      "report_date": "2026-07-03",
+      "kol": "thankUcrypto",
+      "tweet_url": "https://x.com/thankUcrypto/status/2072885735083102289",
+      "tweet_created_at": "2026-07-03T00:00:00+00:00",
+      "text": "海力士成本我记得是1400\\n闪迪1750\\n美光975\\n\\n加起来4倍杠杆\\n\\n下周见。",
+      "tags": "#KOL/thankUcrypto, #Topic/Market, #Type/Framework, #Date/2026-07-03",
+      "topic": "Market",
+      "asset": "",
+      "type_tag": "Framework",
+      "likes": 61,
+      "retweets": 1,
+      "replies": 15,
+      "quotes": 1,
+      "crawl_status": "ok",
+      "crawled_at": "2026-07-03T13:25:44.090783+08:00"
     },
     {
       "tweet_id": "2072881451583127588",
@@ -101,12 +119,12 @@
       "topic": "Market",
       "asset": "",
       "type_tag": "Framework",
-      "likes": 7,
-      "retweets": 0,
-      "replies": 15,
+      "likes": 22,
+      "retweets": 4,
+      "replies": 20,
       "quotes": 0,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-03T11:58:36.296795+08:00"
+      "crawled_at": "2026-07-03T13:25:44.090783+08:00"
     }
   ]
 }
