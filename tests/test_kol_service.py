@@ -407,3 +407,84 @@ def test_build_report_context_excludes_low_signal_accounts_from_body():
     assert "thankUcrypto" not in worth_reading_usernames
     assert "thankUcrypto" not in focus_usernames
     assert "thankUcrypto" in context["low_signal_accounts"]
+
+
+def test_is_informative_post_filters_generic_market_chatter_without_crypto_anchor():
+    service = KolService.__new__(KolService)
+    service.settings = SimpleNamespace(timezone="Asia/Shanghai")
+    service.deepseek = DummyDeepSeek()
+    service.logger = object()
+
+    hit = KolHit(
+        group_name="华语头部大V",
+        username="thankUcrypto",
+        role="中文交易博主",
+        category="交易 / 情绪",
+        posts=[],
+    )
+    post = TweetRecord(
+        id="stock_leverage",
+        text="海力士成本我记得是1400 闪迪1750 美光975 加起来4倍杠杆 下周见。",
+        author_username="thankUcrypto",
+        created_at=datetime(2026, 7, 3, 2, 0, tzinfo=timezone.utc),
+        like_count=80,
+        retweet_count=3,
+        reply_count=2,
+        quote_count=0,
+    )
+
+    assert service._is_informative_post(post, hit) is False
+
+
+def test_is_informative_post_filters_offtopic_social_commentary():
+    service = KolService.__new__(KolService)
+    service.settings = SimpleNamespace(timezone="Asia/Shanghai")
+    service.deepseek = DummyDeepSeek()
+    service.logger = object()
+
+    hit = KolHit(
+        group_name="华语优质海外博主",
+        username="0xTodd",
+        role="海外华人链上分析师",
+        category="华语 / 链上数据",
+        posts=[],
+    )
+    post = TweetRecord(
+        id="offtopic",
+        text="这个号最近的推文除了 PM 操纵民主之外，还包括平行国家实验、爱泼斯坦和 Paypal 黑帮掌握比特币、CIA 控制疫苗、AI 真相法庭篡夺叙事。",
+        author_username="0xTodd",
+        created_at=datetime(2026, 7, 3, 2, 0, tzinfo=timezone.utc),
+        like_count=120,
+        retweet_count=10,
+        reply_count=8,
+        quote_count=1,
+    )
+
+    assert service._is_informative_post(post, hit) is False
+
+
+def test_is_informative_post_filters_generic_protocol_marketing():
+    service = KolService.__new__(KolService)
+    service.settings = SimpleNamespace(timezone="Asia/Shanghai")
+    service.deepseek = DummyDeepSeek()
+    service.logger = object()
+
+    hit = KolHit(
+        group_name="海外权威创始&机构大佬",
+        username="justinsuntron",
+        role="TRON创始人",
+        category="公链 / 交易平台 / 行业话题",
+        posts=[],
+    )
+    post = TweetRecord(
+        id="promo",
+        text="Interesting direction. Payments should be more flexible, more global, and closer to real time. TRON is built for this kind of scale.",
+        author_username="justinsuntron",
+        created_at=datetime(2026, 7, 3, 2, 0, tzinfo=timezone.utc),
+        like_count=90,
+        retweet_count=6,
+        reply_count=4,
+        quote_count=0,
+    )
+
+    assert service._is_informative_post(post, hit) is False

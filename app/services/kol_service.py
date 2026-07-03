@@ -604,6 +604,7 @@ class KolService:
             "8. judgement 必须给出明确结论，例如偏多/偏空/偏中性、长期/短线、制度增量/产品进展/结构转强，不要写“继续观察”“线索跟踪”“不要下重结论”之类空话。"
             "9. watch_reason 必须指出后续要观察的具体变量，如 ETF 审批节奏、收益产品扩张、价格结构是否延续、资金是否轮动，不要写泛泛的“是否强化观点”。"
             "10. 如果某个账号只有情绪帖或闲聊帖，就不要把它放进 groups 或 worth_reading。"
+            "11. 纯协议宣传、品牌口号、泛政治/阴谋论/社会评论、与加密投资主线弱相关的股市闲聊，也不要纳入正文。"
         )
 
     def _report_user_prompt(
@@ -749,6 +750,19 @@ class KolService:
     ) -> tuple[list[str], list[str], list[str]]:
         text = f"{hit.category} {post.text}".lower()
         topic_rules = [
+            (
+                "Market",
+                [
+                    "market",
+                    "risk-on",
+                    "risk off",
+                    "liquidity",
+                    "rotation",
+                    "leverage",
+                    "positioning",
+                    "volatility",
+                ],
+            ),
             ("BTC", ["bitcoin", "btc"]),
             ("ETH", ["ethereum", "eth"]),
             ("Macro", ["macro", "fed", "nonfarm", "cpi", "inflation", "rates"]),
@@ -777,9 +791,10 @@ class KolService:
             ("TAO", ["tao"]),
             ("ONDO", ["ondo"]),
             ("HYPE", ["hype"]),
+            ("TRX", ["tron", "trx"]),
         ]
         return (
-            self._match_rules(text, topic_rules, default=["Market"]),
+            self._match_rules(text, topic_rules),
             self._match_rules(text, asset_rules),
             self._match_rules(text, type_rules, default=["Framework"]),
         )
@@ -830,37 +845,18 @@ class KolService:
             return False
         if self._looks_like_pure_emotion(text):
             return False
+        if self._looks_like_offtopic_social_commentary(text):
+            return False
+        if self._looks_like_generic_brand_marketing(text):
+            return False
+        if not self._has_core_investment_relevance(text, hit):
+            return False
 
         score = self._post_signal_score(post, hit)
         if score >= self.MIN_INFORMATIVE_POST_SCORE:
             return True
 
-        lowered = text.lower()
-        signal_keywords = [
-            "etf",
-            "sec",
-            "fed",
-            "nonfarm",
-            "inflation",
-            "rates",
-            "treasury",
-            "stablecoin",
-            "yield",
-            "morpho",
-            "spark",
-            "bitcoin",
-            "ethereum",
-            "solana",
-            "ondo",
-            "near",
-            "tao",
-            "framework",
-            "cycle",
-            "adoption",
-        ]
-        return any(
-            keyword in lowered for keyword in signal_keywords
-        ) or self._has_analysis_signal(text)
+        return self._has_analysis_signal(text)
 
     @staticmethod
     def _looks_like_reply_or_repost(text: str) -> bool:
@@ -970,6 +966,194 @@ class KolService:
         return any(pattern in lowered for pattern in emotion_patterns)
 
     @staticmethod
+    def _looks_like_offtopic_social_commentary(text: str) -> bool:
+        lowered = text.lower()
+        off_topic_patterns = [
+            "cia",
+            "vaccine",
+            "paypal mafia",
+            "epstein",
+            "israel",
+            "democracy",
+            "monarchy",
+            "world cup",
+            "soccer",
+            "football",
+            "marketing号",
+            "营销号",
+            "政治",
+            "阴谋",
+            "new feudal",
+        ]
+        keep_keywords = [
+            "btc",
+            "bitcoin",
+            "eth",
+            "ethereum",
+            "etf",
+            "sec",
+            "stablecoin",
+            "yield",
+            "morpho",
+            "spark",
+            "tron",
+            "defi",
+            "onchain",
+            "macro",
+            "inflation",
+            "nonfarm",
+            "rates",
+        ]
+        if any(keyword in lowered for keyword in keep_keywords):
+            relevant_hits = sum(keyword in lowered for keyword in keep_keywords)
+            off_topic_hits = sum(pattern in lowered for pattern in off_topic_patterns)
+            return off_topic_hits >= 2 and relevant_hits <= 1
+        return any(pattern in lowered for pattern in off_topic_patterns)
+
+    @staticmethod
+    def _looks_like_generic_brand_marketing(text: str) -> bool:
+        lowered = text.lower()
+        promo_patterns = [
+            "interesting direction",
+            "built for this kind of scale",
+            "built for this scale",
+            "more flexible",
+            "more global",
+            "closer to real time",
+            "we are built for",
+            "excited to share",
+            "proud to announce",
+        ]
+        substance_keywords = [
+            "tvl",
+            "revenue",
+            "yield",
+            "apy",
+            "volume",
+            "sec",
+            "etf",
+            "approval",
+            "stablecoin",
+            "morpho",
+            "spark",
+            "onchain",
+            "defi",
+            "treasury",
+            "bitcoin",
+            "eth",
+            "solana",
+            "liquidity",
+            "adoption",
+            "fees",
+            "wallet",
+            "partnership",
+            "settlement",
+            "launch",
+            "approval",
+        ]
+        return any(pattern in lowered for pattern in promo_patterns) and not any(
+            keyword in lowered for keyword in substance_keywords
+        )
+
+    def _has_core_investment_relevance(self, text: str, hit: KolHit) -> bool:
+        lowered = text.lower()
+        crypto_investment_keywords = [
+            "btc",
+            "bitcoin",
+            "eth",
+            "ethereum",
+            "etf",
+            "sec",
+            "stablecoin",
+            "yield",
+            "morpho",
+            "spark",
+            "defi",
+            "onchain",
+            "treasury",
+            "solana",
+            "tron",
+            "trx",
+            "ondo",
+            "near",
+            "tao",
+            "eigen",
+            "hype",
+            "altcoin",
+            "alts",
+            "token",
+            "wallet",
+            "protocol",
+            "chain",
+            "layer 1",
+            "rwa",
+            "adoption",
+            "fees",
+            "revenue",
+            "liquidity",
+        ]
+        macro_keywords = [
+            "macro",
+            "fed",
+            "nonfarm",
+            "cpi",
+            "inflation",
+            "rates",
+            "rate cut",
+            "treasury yield",
+            "fomc",
+        ]
+        market_structure_keywords = [
+            "support",
+            "resistance",
+            "breakout",
+            "breakdown",
+            "uptrend",
+            "downtrend",
+            "rotation",
+            "positioning",
+            "leverage",
+            "liquidation",
+            "risk-on",
+            "risk off",
+            "周期",
+            "结构",
+            "预期",
+            "判断",
+        ]
+        if any(keyword in lowered for keyword in crypto_investment_keywords):
+            return True
+        if any(keyword in lowered for keyword in macro_keywords):
+            return True
+        if any(keyword in lowered for keyword in market_structure_keywords):
+            has_asset_anchor = any(
+                keyword in lowered
+                for keyword in [
+                    "btc",
+                    "bitcoin",
+                    "eth",
+                    "ethereum",
+                    "solana",
+                    "tron",
+                    "token",
+                    "crypto",
+                    "加密",
+                    "比特币",
+                    "以太坊",
+                ]
+            )
+            return has_asset_anchor
+        category_lower = (hit.category or "").lower()
+        if "宏观" in hit.category and any(
+            keyword in lowered for keyword in macro_keywords
+        ):
+            return True
+        return any(
+            keyword in category_lower
+            for keyword in ["etf", "监管", "稳定币", "defi", "btc", "eth"]
+        ) and self._has_analysis_signal(text)
+
+    @staticmethod
     def _has_analysis_signal(text: str) -> bool:
         lowered = text.lower()
         signal_patterns = [
@@ -1008,6 +1192,9 @@ class KolService:
             "收益",
             "流动性",
             "结构",
+            "杠杆",
+            "清算",
+            "仓位",
         ]
         return any(pattern in lowered for pattern in signal_patterns)
 
