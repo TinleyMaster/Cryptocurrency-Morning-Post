@@ -1,41 +1,169 @@
 ﻿groups:
   - group_name: "海外权威创始&机构大佬"
     members:
-      - username: "saylor"
-        enabled: true
-        role: "MicroStrategy董事长"
-        category: "机构 / BTC叙事"
-      - username: "brian_armstrong"
-        enabled: true
-        role: "Coinbase CEO"
-        category: "合规 / 美国监管"
       - username: "VitalikButerin"
         enabled: true
         role: "以太坊联合创始人"
         category: "技术 / 公链"
+      - username: "saylor"
+        enabled: true
+        role: "MicroStrategy董事长"
+        category: "机构 / BTC叙事"
+      - username: "cz_binance"
+        enabled: true
+        role: "Binance创始人"
+        category: "交易所 / 行业周期"
+      - username: "brian_armstrong"
+        enabled: true
+        role: "Coinbase CEO"
+        category: "合规 / 美国监管"
+      - username: "CryptoHayes"
+        enabled: true
+        role: "BitMEX联合创始人"
+        category: "宏观 / 周期"
+      - username: "balajis"
+        enabled: true
+        role: "前Coinbase CTO"
+        category: "科技思想 / 长线叙事"
 
   - group_name: "海外交易与数据分析KOL"
     members:
+      - username: "cobie"
+        enabled: true
+        role: "加密推特顶流"
+        category: "交易 / 周期"
       - username: "CryptoMichNL"
         enabled: true
         role: "头部技术分析师"
         category: "技术分析"
+      - username: "Pentosh1"
+        enabled: true
+        role: "老牌交易博主"
+        category: "技术分析"
+      - username: "apunby"
+        enabled: true
+        role: "加密市场观察者"
+        category: "交易 / 市场观察"
+      - username: "RektCapital"
+        enabled: true
+        role: "周期研究博主"
+        category: "周期复盘"
+
+  - group_name: "华语头部大V"
+    members:
+      - username: "justinsuntron"
+        enabled: true
+        role: "TRON创始人"
+        category: "公链 / 交易平台 / 行业话题"
+      - username: "Heyiyiherry"
+        enabled: true
+        role: "Binance联合创始人"
+        category: "交易所 / 中文生态"
+      - username: "JihanWu"
+        enabled: true
+        role: "比特大陆联合创始人"
+        category: "矿业 / 算力"
+      - username: "bobbyong"
+        enabled: true
+        role: "CoinGecko联合创始人"
+        category: "行情数据 / 研究"
+      - username: "PhyrexNi"
+        enabled: true
+        role: "华语链上分析者"
+        category: "链上数据 / 公链生态"
+      - username: "0xSunNFT"
+        enabled: true
+        role: "链上实盘分析"
+        category: "链上资金 / Meme"
+      - username: "Wuhuoqiu"
+        enabled: true
+        role: "老牌中文全周期博主"
+        category: "交易 / DeFi"
+      - username: "thankUcrypto"
+        enabled: true
+        role: "中文交易博主"
+        category: "合约 / 风控"
+      - username: "KuiGas"
+        enabled: true
+        role: "空投猎人"
+        category: "交互 / 空投Alpha"
+
+  - group_name: "宏观/美元流动性/周期交易"
+    members:
+      - username: "danheld"
+        enabled: true
+        role: "BTC宏观研究者"
+        category: "宏观 / BTC估值"
+      - username: "MacroAlf"
+        enabled: true
+        role: "宏观交易研究者"
+        category: "宏观 / 流动性"
+      - username: "LynAldenContact"
+        enabled: true
+        role: "宏观分析师"
+        category: "宏观 / 长线配置"
+
+  - group_name: "链上数据/比特币原生研究"
+    members:
+      - username: "glassnode"
+        enabled: true
+        role: "链上数据平台官方账号"
+        category: "链上数据 / 官方快讯"
+      - username: "_Checkmatey_"
+        enabled: true
+        role: "Glassnode首席分析师"
+        category: "链上数据 / BTC周期"
+      - username: "OnChainWizard"
+        enabled: true
+        role: "链上巨鲸追踪博主"
+        category: "链上数据 / 巨鲸追踪"
+
+  - group_name: "合规/美国监管/ETF赛道"
+    members:
+      - username: "EricBalchunas"
+        enabled: true
+        role: "ETF分析师"
+        category: "ETF / 机构流向"
+
+  - group_name: "交易盘面/技术分析"
+    members:
       - username: "CredibleCrypto"
         enabled: true
         role: "周期技术分析师"
         category: "技术分析 / 周期"
 
-  - group_name: "华语头部大V"
+  - group_name: "DeFi/RWA/借贷赛道"
     members:
-      - username: "PhyrexNi"
+      - username: "morpholabs"
         enabled: true
-        role: "华语链上分析者"
-        category: "链上数据 / 公链生态"
-      - username: "Wuhuoqiu"
+        role: "Morpho官方账号"
+        category: "DeFi / 借贷"
+      - username: "MonetSupply"
         enabled: true
-        role: "老牌中文全周期博主"
-        category: "交易 / DeFi"
+        role: "稳定币研究员"
+        category: "稳定币 / 支付"
+
+  - group_name: "海外机构风投/一级市场Alpha"
+    members:
+      - username: "jessewldn"
+        enabled: true
+        role: "Paradigm合伙人"
+        category: "VC / 一级市场"
+      - username: "alexchenn"
+        enabled: true
+        role: "a16z Crypto负责人"
+        category: "VC / a16z Crypto"
+
+  - group_name: "华语优质海外博主"
+    members:
       - username: "0xTodd"
         enabled: true
         role: "海外华人链上分析师"
         category: "华语 / 链上数据"
+
+  - group_name: "Meme/社交舆情赛道"
+    members:
+      - username: "degencodeguy"
+        enabled: true
+        role: "Solana Meme研究员"
+        category: "Meme / Solana生态"
