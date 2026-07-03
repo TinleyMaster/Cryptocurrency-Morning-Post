@@ -62,7 +62,6 @@ def test_build_report_context_falls_back_without_ai():
     service.settings = SimpleNamespace(timezone="Asia/Shanghai")
     service.deepseek = DummyDeepSeek()
     service.logger = object()
-    service.worth_reading_limit = 8
 
     profiles = [
         KolProfile(
@@ -107,3 +106,44 @@ def test_build_report_context_falls_back_without_ai():
     assert context["worth_reading"]
     assert context["worth_reading"][0]["tags"][0] == "#KOL/saylor"
     assert context["focus_accounts"][0]["username"] == "saylor"
+
+
+def test_build_worth_reading_prefers_informative_posts_without_external_limit():
+    service = KolService.__new__(KolService)
+    service.settings = SimpleNamespace(timezone="Asia/Shanghai")
+    service.deepseek = DummyDeepSeek()
+    service.logger = object()
+
+    hit = KolHit(
+        group_name="海外交易与数据分析KOL",
+        username="Pentosh1",
+        role="老牌交易博主",
+        category="交易 / 结构",
+        posts=[
+            TweetRecord(
+                id="low",
+                text="gm",
+                author_username="Pentosh1",
+                created_at=datetime(2026, 7, 3, 1, 0, tzinfo=timezone.utc),
+            ),
+            TweetRecord(
+                id="high",
+                text="Market structure on HYPE remains constructive, no breakdown yet and adoption plus revenues still support the thesis.",
+                author_username="Pentosh1",
+                created_at=datetime(2026, 7, 3, 2, 0, tzinfo=timezone.utc),
+                like_count=500,
+                retweet_count=60,
+                reply_count=30,
+                quote_count=10,
+            ),
+        ],
+    )
+
+    worth_reading = service._build_worth_reading(
+        ai_payload=None,
+        hit_lookup={"Pentosh1": hit},
+        now_dt=datetime(2026, 7, 3, 10, 0, tzinfo=timezone.utc),
+    )
+
+    assert len(worth_reading) == 1
+    assert worth_reading[0]["tweet_url"].endswith("/high")

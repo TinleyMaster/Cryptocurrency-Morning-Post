@@ -110,8 +110,6 @@ def load_settings() -> Settings:
         "DEEPSEEK_MODEL": os.getenv("DEEPSEEK_MODEL"),
         "DWELLIR_API_KEY": os.getenv("DWELLIR_API_KEY"),
         "HELIUS_API_KEY": os.getenv("HELIUS_API_KEY"),
-        "KOL_MAX_POSTS_PER_AUTHOR": os.getenv("KOL_MAX_POSTS_PER_AUTHOR"),
-        "KOL_WORTH_READING_LIMIT": os.getenv("KOL_WORTH_READING_LIMIT"),
         "QUICKNODE_SOLANA_RPC_URL": os.getenv("QUICKNODE_SOLANA_RPC_URL"),
         "WECOM_BOT_WEBHOOK_URL": os.getenv("WECOM_BOT_WEBHOOK_URL"),
         "XPOZ_API_KEY": os.getenv("XPOZ_API_KEY"),

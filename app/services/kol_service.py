@@ -27,6 +27,11 @@ from app.utils.time_utils import (
 
 
 class KolService:
+    DEFAULT_FETCH_LIMIT_PER_AUTHOR = 40
+    MAX_WORTH_READING_ITEMS = 15
+    MAX_WORTH_READING_PER_AUTHOR = 2
+    MIN_INFORMATIVE_POST_SCORE = 180
+
     def __init__(self, settings, logger) -> None:
         self.settings = settings
         self.logger = logger
@@ -36,12 +41,6 @@ class KolService:
             settings.env.get("DEEPSEEK_API_KEY"),
             base_url=settings.env.get("DEEPSEEK_BASE_URL"),
             model=settings.env.get("DEEPSEEK_MODEL"),
-        )
-        self.max_posts_per_author = self._int_env(
-            settings.env.get("KOL_MAX_POSTS_PER_AUTHOR"), 12
-        )
-        self.worth_reading_limit = self._int_env(
-            settings.env.get("KOL_WORTH_READING_LIMIT"), 8
         )
         self.publisher = FeishuPublishService(
             FeishuClient(
@@ -76,7 +75,7 @@ class KolService:
         for profile in profiles:
             try:
                 posts = self.xpoz.get_recent_posts_by_author(
-                    profile.username, limit=self.max_posts_per_author
+                    profile.username, limit=self.DEFAULT_FETCH_LIMIT_PER_AUTHOR
                 )
             except Exception as exc:
                 fetch_error_accounts.append(profile.username)
@@ -450,6 +449,7 @@ class KolService:
     ) -> list[dict[str, Any]]:
         items: list[dict[str, Any]] = []
         seen_urls: set[str] = set()
+        per_author_counts: dict[str, int] = defaultdict(int)
         ai_items = ai_payload.get("worth_reading") if ai_payload else None
 
         if isinstance(ai_items, list):
@@ -462,7 +462,11 @@ class KolService:
                     continue
                 post = self._pick_post(hit, candidate.get("tweet_id"))
                 tweet_url = self._tweet_url(username, post.id)
-                if tweet_url in seen_urls:
+                if (
+                    tweet_url in seen_urls
+                    or per_author_counts[username] >= self.MAX_WORTH_READING_PER_AUTHOR
+                    or not self._is_informative_post(post, hit)
+                ):
                     continue
                 items.append(
                     {
@@ -474,7 +478,8 @@ class KolService:
                     }
                 )
                 seen_urls.add(tweet_url)
-                if len(items) >= self.worth_reading_limit:
+                per_author_counts[username] += 1
+                if len(items) >= self.MAX_WORTH_READING_ITEMS:
                     break
 
         if items:
@@ -482,15 +487,23 @@ class KolService:
 
         candidates: list[tuple[KolHit, TweetRecord]] = []
         for hit in hit_lookup.values():
-            for post in hit.posts[:2]:
-                candidates.append((hit, post))
+            for post in hit.posts:
+                if self._is_informative_post(post, hit):
+                    candidates.append((hit, post))
+        if not candidates:
+            for hit in hit_lookup.values():
+                for post in hit.posts[:2]:
+                    candidates.append((hit, post))
         candidates.sort(
             key=lambda item: self._post_signal_score(item[1], item[0]),
             reverse=True,
         )
         for hit, post in candidates:
             tweet_url = self._tweet_url(hit.username, post.id)
-            if tweet_url in seen_urls:
+            if (
+                tweet_url in seen_urls
+                or per_author_counts[hit.username] >= self.MAX_WORTH_READING_PER_AUTHOR
+            ):
                 continue
             items.append(
                 {
@@ -500,7 +513,8 @@ class KolService:
                 }
             )
             seen_urls.add(tweet_url)
-            if len(items) >= self.worth_reading_limit:
+            per_author_counts[hit.username] += 1
+            if len(items) >= self.MAX_WORTH_READING_ITEMS:
                 break
         return items
 
@@ -561,7 +575,7 @@ class KolService:
             "1. three_points 为 3 条。"
             "2. overview / consensus / differences 各 2-4 条。"
             "3. 每个 group 只保留最有信息密度的账号，不必覆盖全部命中账号。"
-            "4. worth_reading 输出 4-8 条，并且 tweet_id 必须来自输入数据。"
+            "4. worth_reading 优先覆盖全部高信息量帖子，不要机械限制在 8 条；通常输出 6-15 条，并且 tweet_id 必须来自输入数据。"
             "5. tags 使用 #KOL/#Topic/#Asset/#Type/#Date 体系。"
         )
 
@@ -601,7 +615,7 @@ class KolService:
                             "engagement": self._post_engagement(post),
                             "text": self._summarize_text(post.text, 320),
                         }
-                        for post in hit.posts[:4]
+                        for post in hit.posts[:6]
                     ],
                 }
                 for hit in hits
@@ -767,13 +781,6 @@ class KolService:
         return text
 
     @staticmethod
-    def _int_env(value: str | None, default: int) -> int:
-        try:
-            return max(1, int(value or default))
-        except (TypeError, ValueError):
-            return default
-
-    @staticmethod
     def _post_engagement(post: TweetRecord) -> int:
         return (
             post.like_count + post.retweet_count + post.reply_count + post.quote_count
@@ -785,6 +792,40 @@ class KolService:
             + min(len(post.text or ""), 300)
             + len(hit.posts) * 30
         )
+
+    def _is_informative_post(self, post: TweetRecord, hit: KolHit) -> bool:
+        text = re.sub(r"\s+", " ", post.text or "").strip()
+        if len(text) < 40:
+            return False
+
+        score = self._post_signal_score(post, hit)
+        if score >= self.MIN_INFORMATIVE_POST_SCORE:
+            return True
+
+        lowered = text.lower()
+        signal_keywords = [
+            "etf",
+            "sec",
+            "fed",
+            "nonfarm",
+            "inflation",
+            "rates",
+            "treasury",
+            "stablecoin",
+            "yield",
+            "morpho",
+            "spark",
+            "bitcoin",
+            "ethereum",
+            "solana",
+            "ondo",
+            "near",
+            "tao",
+            "framework",
+            "cycle",
+            "adoption",
+        ]
+        return any(keyword in lowered for keyword in signal_keywords)
 
     def _hit_signal_score(self, hit: KolHit) -> int:
         return (
