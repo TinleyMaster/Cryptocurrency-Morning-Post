@@ -29,12 +29,12 @@
       "topic": "ETH",
       "asset": "ETH",
       "type_tag": "Framework",
-      "likes": 285,
+      "likes": 288,
       "retweets": 47,
       "replies": 32,
       "quotes": 0,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-03T11:46:32.906250+08:00"
+      "crawled_at": "2026-07-03T11:58:36.296795+08:00"
     },
     {
       "tweet_id": "2072844377668420051",
@@ -52,7 +52,7 @@
       "replies": 37,
       "quotes": 0,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-03T11:46:32.906250+08:00"
+      "crawled_at": "2026-07-03T11:58:36.296795+08:00"
     },
     {
       "tweet_id": "2072876819511189618",
@@ -70,7 +70,7 @@
       "replies": 5,
       "quotes": 0,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-03T11:46:32.906250+08:00"
+      "crawled_at": "2026-07-03T11:58:36.296795+08:00"
     },
     {
       "tweet_id": "2072857585313579174",
@@ -88,7 +88,7 @@
       "replies": 0,
       "quotes": 0,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-03T11:46:32.906250+08:00"
+      "crawled_at": "2026-07-03T11:58:36.296795+08:00"
     },
     {
       "tweet_id": "2072881451583127588",
@@ -106,7 +106,7 @@
       "replies": 15,
       "quotes": 0,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-03T11:46:32.906250+08:00"
+      "crawled_at": "2026-07-03T11:58:36.296795+08:00"
     }
   ]
 }
