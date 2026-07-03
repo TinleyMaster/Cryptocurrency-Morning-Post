@@ -14,6 +14,11 @@ jobs:
     env:
       TZ: Asia/Shanghai
       XPOZ_API_KEY: ${{ secrets.XPOZ_API_KEY }}
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      DEEPSEEK_BASE_URL: ${{ secrets.DEEPSEEK_BASE_URL }}
+      DEEPSEEK_MODEL: ${{ secrets.DEEPSEEK_MODEL }}
+      KOL_MAX_POSTS_PER_AUTHOR: ${{ vars.KOL_MAX_POSTS_PER_AUTHOR || '12' }}
+      KOL_WORTH_READING_LIMIT: ${{ vars.KOL_WORTH_READING_LIMIT || '8' }}
       WECOM_BOT_WEBHOOK_URL: ${{ secrets.WECOM_BOT_WEBHOOK_URL }}
       FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
       FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}

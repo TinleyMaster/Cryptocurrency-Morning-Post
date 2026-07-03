@@ -1,16 +1,31 @@
 # {{ title }}
 
-> 统计窗口：`{{ window_start }}` 至 `{{ window_end }}`（{{ timezone }}）
-> 样本范围：默认 KOL 模板
-> 结果概览：命中 `{{ hit_count }}` 个账号，共 `{{ post_count }}` 条有效帖子
+> 统计窗口：{{ window_start }} 至 {{ window_end }}
+> 时区：{{ timezone }}
+{% if fetch_error_accounts %}
+> 样本范围：配置名单 {{ total_accounts }} 个账号；本次成功抓取 {{ fetched_accounts }} 个，另有 {{ fetch_error_accounts | length }} 个账号因抓取异常未稳定返回
+{% else %}
+> 样本范围：配置名单 {{ total_accounts }} 个账号；本次成功抓取 {{ fetched_accounts }} 个
+{% endif %}
+> 结果概览：已成功抓取的 {{ fetched_accounts }} 个账号中，{{ hit_count }} 个账号在过去 24 小时内命中至少 1 条帖子，合计约 {{ post_count }} 条有效帖子
 
 ## 今日一句话
 
 - {{ one_liner }}
 
+{% if three_points %}
+## 今日三点
+
+{% for item in three_points %}
+- {{ item }}
+{% endfor %}
+{% endif %}
+
 ## 总览
 
-- 当前为云上脚手架样例输出，已具备 24 小时过滤、模板渲染和 worth-reading 解析能力。
+{% for item in overview %}
+- {{ item }}
+{% endfor %}
 
 {% for group in groups %}
 ## {{ group.group_name }}
@@ -22,9 +37,40 @@
 - 核心观点：{{ hit.core }}
 - 明确判断：{{ hit.judgement }}
 - 值得关注：{{ hit.watch_reason }}
+{% if hit.tweet_url %}
+- 值得一读：`{{ hit.tweet_url }}`
+{% endif %}
+{% if hit.tags %}
+- 对应 tags：{% for tag in hit.tags %}`{{ tag }}` {% endfor %}
+{% endif %}
+- 24h 发帖数：{{ hit.post_count }}；互动表现：{{ hit.engagement_label }}
 {% endfor %}
 
 {% endfor %}
+{% if consensus %}
+## 今日KOL共识
+
+{% for item in consensus %}
+- {{ item }}
+{% endfor %}
+{% endif %}
+
+{% if differences %}
+## 分歧点
+
+{% for item in differences %}
+- {{ item }}
+{% endfor %}
+{% endif %}
+
+{% if focus_accounts %}
+## 今日最值得重点看的账号
+
+{% for item in focus_accounts %}
+- `@{{ item.username }}`：{{ item.reason }}
+{% endfor %}
+{% endif %}
+
 ## 值得一读的推文链接
 
 {% for item in worth_reading %}
@@ -32,3 +78,14 @@
   `tags`: {% for tag in item.tags %}`{{ tag }}` {% endfor %}
 
 {% endfor %}
+
+## 未命中与数据说明
+{% if no_post_accounts %}
+- 明确无新增发帖的账号：{% for username in no_post_accounts %}`{{ username }}`{% if not loop.last %}、{% endif %}{% endfor %}
+{% endif %}
+{% if low_signal_accounts %}
+- 有更新但信息密度较低、未纳入正文重点展开的账号：{% for username in low_signal_accounts %}`{{ username }}`{% if not loop.last %}、{% endif %}{% endfor %}
+{% endif %}
+{% if fetch_error_accounts %}
+- 工具间歇性错误、未能稳定返回结果的账号：{% for username in fetch_error_accounts %}`{{ username }}`{% if not loop.last %}、{% endif %}{% endfor %}
+{% endif %}

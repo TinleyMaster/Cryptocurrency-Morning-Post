@@ -32,6 +32,13 @@ class WorthReadingTweet:
     quote_count: int = 0
     crawl_status: str = "pending"
     notes: str = ""
+    vocabulary_note: str = ""
+    translation_note: str = ""
+    vocabulary: list[str] = field(default_factory=list)
+    sentence_pairs: list[dict[str, str]] = field(default_factory=list)
+    ai_summary: list[str] = field(default_factory=list)
+    logic_structure: list[str] = field(default_factory=list)
+    extended_thoughts: list[str] = field(default_factory=list)
 
 
 @dataclass

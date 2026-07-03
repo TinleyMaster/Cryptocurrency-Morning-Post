@@ -1,3 +1,8 @@
+from datetime import datetime, timezone
+from types import SimpleNamespace
+
+from app.models.kol import KolProfile
+from app.models.tweet import KolHit, TweetRecord
 from app.services.kol_service import KolService
 
 
@@ -45,3 +50,60 @@ def test_archive_base_records_downgrades_exception(monkeypatch):
     assert note.startswith("失败（Feishu API request failed")
     assert events[0]["stage"] == "feishu_base_archive"
     assert events[0]["status"] == "warning"
+
+
+class DummyDeepSeek:
+    def is_configured(self) -> bool:
+        return False
+
+
+def test_build_report_context_falls_back_without_ai():
+    service = KolService.__new__(KolService)
+    service.settings = SimpleNamespace(timezone="Asia/Shanghai")
+    service.deepseek = DummyDeepSeek()
+    service.logger = object()
+    service.worth_reading_limit = 8
+
+    profiles = [
+        KolProfile(
+            username="saylor",
+            role="MicroStrategy董事长",
+            category="机构 / BTC叙事",
+            group_name="海外权威创始&机构大佬",
+        )
+    ]
+    hit = KolHit(
+        group_name="海外权威创始&机构大佬",
+        username="saylor",
+        role="MicroStrategy董事长",
+        category="机构 / BTC叙事",
+        posts=[
+            TweetRecord(
+                id="123",
+                text="Bitcoin treasury adoption keeps accelerating across institutions.",
+                author_username="saylor",
+                created_at=datetime(2026, 7, 3, 1, 0, tzinfo=timezone.utc),
+                like_count=100,
+                retweet_count=10,
+                reply_count=5,
+                quote_count=1,
+            )
+        ],
+    )
+
+    context = service._build_report_context(
+        title="2026-07-03 加密KOL过去24小时监控报告",
+        start_dt=datetime(2026, 7, 2, 10, 0, tzinfo=timezone.utc),
+        end_dt=datetime(2026, 7, 3, 10, 0, tzinfo=timezone.utc),
+        now_dt=datetime(2026, 7, 3, 10, 0, tzinfo=timezone.utc),
+        profiles=profiles,
+        hits=[hit],
+        fetched_accounts=["saylor"],
+        no_post_accounts=[],
+        fetch_error_accounts=[],
+    )
+
+    assert context["groups"]
+    assert context["worth_reading"]
+    assert context["worth_reading"][0]["tags"][0] == "#KOL/saylor"
+    assert context["focus_accounts"][0]["username"] == "saylor"

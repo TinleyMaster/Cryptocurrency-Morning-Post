@@ -1,7 +1,23 @@
 # {{ title }}
 
 > 来源报告：`{{ source_report }}`
-> 推文条数：`{{ tweets | length }}`
+> 处理条数：`{{ tweets | length }}`
+> 原文回抓情况：{{ crawl_summary }}
+> 说明：以下内容只基于社交媒体发言做解读，不构成交易建议
+
+{% if one_liner %}
+## 今日一句话
+
+- {{ one_liner }}
+{% endif %}
+
+{% if quick_overview %}
+## 快速总览
+
+{% for item in quick_overview %}
+- {{ item }}
+{% endfor %}
+{% endif %}
 
 {% for tweet in tweets %}
 ## {{ loop.index }}. {{ tweet.display_name }}
@@ -11,12 +27,48 @@
 - 发布时间：`{{ tweet.created_at_display }}`
 - 互动：`{{ tweet.like_count }}` 赞 / `{{ tweet.retweet_count }}` 转发 / `{{ tweet.reply_count }}` 回复 / `{{ tweet.quote_count }}` 引用
 
+### 词汇预习
+
+{% if tweet.vocabulary_note %}
+- {{ tweet.vocabulary_note }}
+{% else %}
+{% for item in tweet.vocabulary %}
+- {{ item }}
+{% endfor %}
+{% endif %}
+
 ### 原文
 ```text
 {{ tweet.text }}
 ```
 
+### 逐句对照翻译
+
+{% if tweet.translation_note %}
+- {{ tweet.translation_note }}
+{% else %}
+{% for pair in tweet.sentence_pairs %}
+- `EN:` {{ pair.en }}
+- `CN:` {{ pair.cn }}
+{% endfor %}
+{% endif %}
+
+### AI总结
+
+{% for item in tweet.ai_summary %}
+- {{ item }}
+{% endfor %}
+
 ### 逻辑拆解
-- {{ tweet.notes }}
+
+{% for item in tweet.logic_structure %}
+{{ loop.index }}. {{ item }}
+{% endfor %}
+
+### 延伸思考
+
+{% for item in tweet.extended_thoughts %}
+- {{ item }}
+{% endfor %}
 
 {% endfor %}
