@@ -81,5 +81,7 @@ def test_xpoz_client_maps_sdk_result(monkeypatch):
     assert posts[0].author_username == "saylor"
     assert posts[0].like_count == 10
     assert isinstance(posts[0].created_at, datetime)
+    assert posts[0].created_at.tzinfo is not None
     assert hydrated[0].text == "hydrated-post"
     assert hydrated[0].quote_count == 2
+    assert hydrated[0].created_at.tzinfo is not None

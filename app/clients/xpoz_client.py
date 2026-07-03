@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import requests
@@ -19,7 +19,9 @@ class XpozClient:
         self._resolved_api_key: str | None = None
         self._sdk_client: XpozSdkClient | None = None
 
-    def get_recent_posts_by_author(self, username: str, limit: int = 5) -> list[TweetRecord]:
+    def get_recent_posts_by_author(
+        self, username: str, limit: int = 5
+    ) -> list[TweetRecord]:
         client = self._get_sdk_client()
         result = client.twitter.get_posts_by_author(
             username,
@@ -103,7 +105,13 @@ class XpozClient:
     @staticmethod
     def _parse_datetime(value: str | datetime | None) -> datetime:
         if isinstance(value, datetime):
-            return value
-        if not value:
-            return datetime.fromisoformat("1970-01-01T00:00:00")
-        return isoparse(value)
+            parsed = value
+        elif not value:
+            parsed = datetime(1970, 1, 1, tzinfo=timezone.utc)
+        else:
+            parsed = isoparse(value)
+
+        # XPOZ occasionally returns date-only or timezone-free values.
+        if parsed.tzinfo is None or parsed.tzinfo.utcoffset(parsed) is None:
+            return parsed.replace(tzinfo=timezone.utc)
+        return parsed
