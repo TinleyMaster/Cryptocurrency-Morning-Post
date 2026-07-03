@@ -27,7 +27,7 @@ from app.utils.time_utils import (
 
 
 class KolService:
-    DEFAULT_FETCH_LIMIT_PER_AUTHOR = 40
+    DEFAULT_FETCH_LIMIT_PER_AUTHOR = 80
     MAX_WORTH_READING_ITEMS = 15
     MAX_WORTH_READING_PER_AUTHOR = 2
     MIN_INFORMATIVE_POST_SCORE = 180
@@ -1095,16 +1095,22 @@ class KolService:
         crypto_investment_keywords = [
             "btc",
             "bitcoin",
+            "比特币",
             "eth",
             "ethereum",
+            "以太坊",
             "etf",
             "sec",
             "stablecoin",
+            "稳定币",
             "yield",
+            "收益",
             "morpho",
             "spark",
             "defi",
+            "协议",
             "onchain",
+            "链上",
             "treasury",
             "solana",
             "tron",
@@ -1118,25 +1124,42 @@ class KolService:
             "alts",
             "token",
             "wallet",
+            "钱包",
             "protocol",
             "chain",
+            "公链",
             "layer 1",
             "rwa",
             "adoption",
+            "采用",
             "fees",
             "revenue",
+            "收入",
             "liquidity",
+            "流动性",
         ]
         macro_keywords = [
             "macro",
             "fed",
+            "美联储",
             "nonfarm",
+            "非农",
             "cpi",
             "inflation",
+            "通胀",
             "rates",
+            "利率",
             "rate cut",
+            "降息",
+            "加息",
             "treasury yield",
             "fomc",
+            "失业率",
+            "就业",
+            "点阵图",
+            "美股",
+            "纳指",
+            "风险偏好",
         ]
         market_structure_keywords = [
             "support",
@@ -1155,6 +1178,10 @@ class KolService:
             "结构",
             "预期",
             "判断",
+            "价格带",
+            "仓位",
+            "节奏",
+            "轮动",
         ]
         if any(keyword in lowered for keyword in crypto_investment_keywords):
             return True

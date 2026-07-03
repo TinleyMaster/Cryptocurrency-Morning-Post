@@ -698,3 +698,57 @@ def test_is_informative_post_filters_generic_protocol_marketing():
     )
 
     assert service._is_informative_post(post, hit) is False
+
+
+def test_is_informative_post_accepts_chinese_macro_btc_post():
+    service = KolService.__new__(KolService)
+    service.settings = SimpleNamespace(timezone="Asia/Shanghai")
+    service.deepseek = DummyDeepSeek()
+    service.logger = object()
+
+    hit = KolHit(
+        group_name="华语头部大V",
+        username="PhyrexNi",
+        role="华语链上分析者",
+        category="链上 / 中文宏观交易",
+        posts=[],
+    )
+    post = TweetRecord(
+        id="macro_cn",
+        text="非农公布的结果和预期有些差距。失业率从 4.3% 回落到 4.2%，这意味着美国就业市场仍然不差。对美联储来说，通胀与利率路径依然重要，但 BTC 在美股承压时仍有韧性，60,000 美元附近价格带继续被验证。",
+        author_username="PhyrexNi",
+        created_at=datetime(2026, 7, 3, 2, 0, tzinfo=timezone.utc),
+        like_count=60,
+        retweet_count=5,
+        reply_count=3,
+        quote_count=0,
+    )
+
+    assert service._is_informative_post(post, hit) is True
+
+
+def test_is_informative_post_accepts_ticker_heavy_portfolio_post():
+    service = KolService.__new__(KolService)
+    service.settings = SimpleNamespace(timezone="Asia/Shanghai")
+    service.deepseek = DummyDeepSeek()
+    service.logger = object()
+
+    hit = KolHit(
+        group_name="海外交易与数据分析KOL",
+        username="CryptoMichNL",
+        role="头部技术分析师",
+        category="交易 / 山寨轮动",
+        posts=[],
+    )
+    post = TweetRecord(
+        id="portfolio_signal",
+        text="I'm pleased to be holding strong positions in $NEAR, $TAO, $EIGEN, $W and $ONDO. Solana keeps outperforming and I expect more upside from here while underperformers need reevaluation.",
+        author_username="CryptoMichNL",
+        created_at=datetime(2026, 7, 3, 2, 0, tzinfo=timezone.utc),
+        like_count=90,
+        retweet_count=8,
+        reply_count=4,
+        quote_count=1,
+    )
+
+    assert service._is_informative_post(post, hit) is True
