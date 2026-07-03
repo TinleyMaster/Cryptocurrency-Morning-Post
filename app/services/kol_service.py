@@ -242,13 +242,19 @@ class KolService:
         fetch_error_accounts: list[str],
     ) -> dict[str, Any]:
         total_accounts = len(profiles)
-        post_count = sum(len(hit.posts) for hit in hits)
         report_date = report_date_str(now_dt)
         hit_lookup = {hit.username: hit for hit in hits}
-        grouped_hits = self._group_hits(hits)
+        informative_hit_lookup = {
+            hit.username: hit for hit in hits if self._select_posts_for_report(hit)
+        }
+        informative_hits = list(informative_hit_lookup.values())
+        informative_grouped_hits = self._group_hits(informative_hits)
+        post_count = sum(
+            len(self._select_posts_for_report(hit)) for hit in informative_hits
+        )
         ai_payload: dict[str, Any] | None = None
 
-        if hits and self.deepseek.is_configured():
+        if informative_hits and self.deepseek.is_configured():
             try:
                 ai_payload = self.deepseek.generate_json(
                     system_prompt=self._report_system_prompt(),
@@ -258,7 +264,7 @@ class KolService:
                         end_dt=end_dt,
                         total_accounts=total_accounts,
                         fetched_accounts=len(fetched_accounts),
-                        hits=hits,
+                        hits=informative_hits,
                     ),
                     temperature=0.2,
                     max_tokens=4200,
@@ -274,41 +280,45 @@ class KolService:
 
         groups, rendered_usernames = self._build_groups(
             ai_payload=ai_payload,
-            grouped_hits=grouped_hits,
-            hit_lookup=hit_lookup,
+            grouped_hits=informative_grouped_hits,
+            hit_lookup=informative_hit_lookup,
             now_dt=now_dt,
         )
-        worth_reading = self._build_worth_reading(ai_payload, hit_lookup, now_dt)
+        worth_reading = self._build_worth_reading(
+            ai_payload, informative_hit_lookup, now_dt
+        )
         focus_accounts = self._build_focus_accounts(
-            ai_payload, hit_lookup, worth_reading
+            ai_payload, informative_hit_lookup, worth_reading
         )
 
         low_signal_accounts = sorted(
-            username for username in hit_lookup if username not in rendered_usernames
+            username
+            for username in hit_lookup
+            if username not in informative_hit_lookup
         )
         overview = self._safe_list(ai_payload.get("overview") if ai_payload else None)
         if not overview:
             overview = [
                 f"本次配置追踪 `{total_accounts}` 个账号，其中成功拉取 `{len(fetched_accounts)}` 个。",
-                f"过去 24 小时命中 `{len(hits)}` 个账号，约 `{post_count}` 条帖子。",
-                f"高频主题主要集中在：{self._topics_overview(hits)}。",
+                f"过去 24 小时命中 `{len(informative_hits)}` 个账号，约 `{post_count}` 条有效帖子。",
+                f"高频主题主要集中在：{self._topics_overview(informative_hits)}。",
             ]
 
         three_points = self._safe_list(
             ai_payload.get("three_points") if ai_payload else None
         )
         if not three_points:
-            three_points = self._fallback_three_points(hits)
+            three_points = self._fallback_three_points(informative_hits)
 
         consensus = self._safe_list(ai_payload.get("consensus") if ai_payload else None)
         if not consensus:
-            consensus = self._fallback_consensus(hits)
+            consensus = self._fallback_consensus(informative_hits)
 
         differences = self._safe_list(
             ai_payload.get("differences") if ai_payload else None
         )
         if not differences:
-            differences = self._fallback_differences(hits)
+            differences = self._fallback_differences(informative_hits)
 
         one_liner = self._safe_text(
             ai_payload.get("one_liner") if ai_payload else None,
@@ -322,7 +332,7 @@ class KolService:
             "timezone": self.settings.timezone,
             "total_accounts": total_accounts,
             "fetched_accounts": len(fetched_accounts),
-            "hit_count": len(hits),
+            "hit_count": len(informative_hits),
             "post_count": post_count,
             "one_liner": one_liner,
             "three_points": three_points,
@@ -426,14 +436,18 @@ class KolService:
                     hit=hit,
                     post=self._pick_informative_post(hit, None),
                     now_dt=now_dt,
-                    core=self._build_specific_core(hit, self._pick_informative_post(hit, None)),
+                    core=self._build_specific_core(
+                        hit, self._pick_informative_post(hit, None)
+                    ),
                     judgement=self._build_specific_judgement(
                         hit, self._pick_informative_post(hit, None)
                     ),
                     watch_reason=self._build_specific_watch_reason(
                         hit, self._pick_informative_post(hit, None)
                     ),
-                    tags=self._infer_tags(hit, self._pick_informative_post(hit, None), now_dt),
+                    tags=self._infer_tags(
+                        hit, self._pick_informative_post(hit, None), now_dt
+                    ),
                 )
                 for hit in selected_hits
             ]
@@ -844,7 +858,9 @@ class KolService:
             "cycle",
             "adoption",
         ]
-        return any(keyword in lowered for keyword in signal_keywords) or self._has_analysis_signal(text)
+        return any(
+            keyword in lowered for keyword in signal_keywords
+        ) or self._has_analysis_signal(text)
 
     @staticmethod
     def _looks_like_reply_or_repost(text: str) -> bool:
@@ -1026,12 +1042,16 @@ class KolService:
             return candidate
         return self._build_specific_core(hit, post)
 
-    def _finalize_judgement(self, candidate: str, hit: KolHit, post: TweetRecord) -> str:
+    def _finalize_judgement(
+        self, candidate: str, hit: KolHit, post: TweetRecord
+    ) -> str:
         if candidate and not self._is_vague_statement(candidate):
             return candidate
         return self._build_specific_judgement(hit, post)
 
-    def _finalize_watch_reason(self, candidate: str, hit: KolHit, post: TweetRecord) -> str:
+    def _finalize_watch_reason(
+        self, candidate: str, hit: KolHit, post: TweetRecord
+    ) -> str:
         if candidate and not self._is_vague_statement(candidate):
             return candidate
         return self._build_specific_watch_reason(hit, post)
@@ -1042,32 +1062,87 @@ class KolService:
         topic_text = " / ".join(topics[:2]) if topics else hit.category
         asset_text = "、".join(assets[:2]) if assets else ""
         if asset_text:
-            return f"围绕 `{topic_text}` 展开，重点涉及 `{asset_text}`，核心表达是：{text}"
+            return (
+                f"围绕 `{topic_text}` 展开，重点涉及 `{asset_text}`，核心表达是：{text}"
+            )
         return f"围绕 `{topic_text}` 展开，核心表达是：{text}"
 
     def _build_specific_judgement(self, hit: KolHit, post: TweetRecord) -> str:
         lowered = (post.text or "").lower()
-        if any(keyword in lowered for keyword in ["not dead", "bull", "uptrend", "breakout", "upside", "继续上行", "转强"]):
+        if any(
+            keyword in lowered
+            for keyword in [
+                "not dead",
+                "bull",
+                "uptrend",
+                "breakout",
+                "upside",
+                "继续上行",
+                "转强",
+            ]
+        ):
             return "整体偏多或偏结构性乐观，说明发帖者认为当前并非趋势破坏，而是仍存在继续上行或情绪修复空间。"
-        if any(keyword in lowered for keyword in ["bear", "downside", "risk", "pressure", "压制", "回调", "错杀"]):
+        if any(
+            keyword in lowered
+            for keyword in [
+                "bear",
+                "downside",
+                "risk",
+                "pressure",
+                "压制",
+                "回调",
+                "错杀",
+            ]
+        ):
             return "偏谨慎但不是纯看空，更像是在提示阶段性压力、节奏风险或市场定价与现实之间仍有偏差。"
-        if any(keyword in lowered for keyword in ["sec", "etf", "approval", "regulation", "监管"]):
+        if any(
+            keyword in lowered
+            for keyword in ["sec", "etf", "approval", "regulation", "监管"]
+        ):
             return "这更像制度与监管层面的增量信息，影响不在短线情绪，而在后续审批节奏和市场预期重定价。"
-        if any(keyword in lowered for keyword in ["yield", "stablecoin", "morpho", "spark", "product", "收益"]):
+        if any(
+            keyword in lowered
+            for keyword in ["yield", "stablecoin", "morpho", "spark", "product", "收益"]
+        ):
             return "这更像产品化和收益机制层面的增量，重点不只是概念，而是实际分发、流动性和规模化能力。"
-        return "这条内容更像对当前市场结构、机制或叙事方向的定性判断，而不是单纯情绪宣泄。"
+        return (
+            "这条内容更像对当前市场结构、机制或叙事方向的定性判断，而不是单纯情绪宣泄。"
+        )
 
     def _build_specific_watch_reason(self, hit: KolHit, post: TweetRecord) -> str:
         lowered = (post.text or "").lower()
-        if any(keyword in lowered for keyword in ["sec", "etf", "approval", "regulation", "监管"]):
+        if any(
+            keyword in lowered
+            for keyword in ["sec", "etf", "approval", "regulation", "监管"]
+        ):
             return "后续重点看监管表态是否继续偏 pro-innovation，以及申请、审批和市场预期是否形成持续催化。"
-        if any(keyword in lowered for keyword in ["yield", "stablecoin", "morpho", "spark", "apy", "收益"]):
+        if any(
+            keyword in lowered
+            for keyword in ["yield", "stablecoin", "morpho", "spark", "apy", "收益"]
+        ):
             return "后续重点看产品是否继续扩张、流动性和用户采用是否上来，以及收益机制能否证明自己不是短期营销。"
-        if any(keyword in lowered for keyword in ["btc", "eth", "uptrend", "breakout", "support", "resistance", "cycle", "结构"]):
+        if any(
+            keyword in lowered
+            for keyword in [
+                "btc",
+                "eth",
+                "uptrend",
+                "breakout",
+                "support",
+                "resistance",
+                "cycle",
+                "结构",
+            ]
+        ):
             return "后续重点看价格结构是否延续、关键支撑阻力位是否被确认，以及同一观点是否被更多交易派账号共振。"
-        if any(keyword in lowered for keyword in ["adoption", "treasury", "institution", "philippines"]):
+        if any(
+            keyword in lowered
+            for keyword in ["adoption", "treasury", "institution", "philippines"]
+        ):
             return "后续重点看 adoption 是否继续扩散到更多渠道或机构主体，而不是停留在单条叙事表达。"
-        return "后续重点看这条观点是否会演变成连续输出、跨账号共识或真正的数据/产品验证。"
+        return (
+            "后续重点看这条观点是否会演变成连续输出、跨账号共识或真正的数据/产品验证。"
+        )
 
     @staticmethod
     def _is_vague_statement(text: str) -> bool:
@@ -1090,12 +1165,6 @@ class KolService:
         informative_posts = [
             post for post in hit.posts if self._is_informative_post(post, hit)
         ]
-        if not informative_posts:
-            return sorted(
-                hit.posts,
-                key=lambda item: self._post_signal_score(item, hit),
-                reverse=True,
-            )[: self.MIN_REPORT_POSTS_PER_AUTHOR]
         return sorted(
             informative_posts,
             key=lambda item: self._post_signal_score(item, hit),

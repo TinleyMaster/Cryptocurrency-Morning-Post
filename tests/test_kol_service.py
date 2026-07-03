@@ -7,7 +7,9 @@ from app.services.kol_service import KolService
 
 
 class DummyPublisher:
-    def __init__(self, blocker: str | None = None, exc: Exception | None = None) -> None:
+    def __init__(
+        self, blocker: str | None = None, exc: Exception | None = None
+    ) -> None:
         self.blocker = blocker
         self.exc = exc
 
@@ -22,11 +24,16 @@ class DummyPublisher:
 
 def test_archive_base_records_returns_blocker_note(monkeypatch):
     service = KolService.__new__(KolService)
-    service.publisher = DummyPublisher(blocker="缺少 FEISHU_BASE_TOKEN / FEISHU_TABLE_ID")
+    service.publisher = DummyPublisher(
+        blocker="缺少 FEISHU_BASE_TOKEN / FEISHU_TABLE_ID"
+    )
     service.logger = object()
     events: list[dict] = []
 
-    monkeypatch.setattr("app.services.kol_service.log_event", lambda logger, **kwargs: events.append(kwargs))
+    monkeypatch.setattr(
+        "app.services.kol_service.log_event",
+        lambda logger, **kwargs: events.append(kwargs),
+    )
 
     record_ids, note = service._archive_base_records({"rows": [{"tweet_id": "1"}]})
 
@@ -38,11 +45,18 @@ def test_archive_base_records_returns_blocker_note(monkeypatch):
 
 def test_archive_base_records_downgrades_exception(monkeypatch):
     service = KolService.__new__(KolService)
-    service.publisher = DummyPublisher(exc=RuntimeError("Feishu API request failed: status=400, code=91402, msg=NOTEXIST"))
+    service.publisher = DummyPublisher(
+        exc=RuntimeError(
+            "Feishu API request failed: status=400, code=91402, msg=NOTEXIST"
+        )
+    )
     service.logger = object()
     events: list[dict] = []
 
-    monkeypatch.setattr("app.services.kol_service.log_event", lambda logger, **kwargs: events.append(kwargs))
+    monkeypatch.setattr(
+        "app.services.kol_service.log_event",
+        lambda logger, **kwargs: events.append(kwargs),
+    )
 
     record_ids, note = service._archive_base_records({"rows": [{"tweet_id": "1"}]})
 
@@ -187,7 +201,11 @@ def test_build_worth_reading_skips_reply_style_posts_and_falls_back_to_real_thes
     worth_reading = service._build_worth_reading(
         ai_payload={
             "worth_reading": [
-                {"username": "EricBalchunas", "tweet_id": "reply_like", "tags": ["#KOL/EricBalchunas", "#Topic/ETF"]}
+                {
+                    "username": "EricBalchunas",
+                    "tweet_id": "reply_like",
+                    "tags": ["#KOL/EricBalchunas", "#Topic/ETF"],
+                }
             ]
         },
         hit_lookup={"EricBalchunas": hit},
@@ -291,10 +309,101 @@ def test_finalize_ai_output_rewrites_vague_judgement_and_watch_reason():
     )
 
     judgement = service._finalize_judgement("建议继续观察，不要下重结论。", hit, post)
-    watch_reason = service._finalize_watch_reason("值得继续跟踪后续是否强化观点。", hit, post)
+    watch_reason = service._finalize_watch_reason(
+        "值得继续跟踪后续是否强化观点。", hit, post
+    )
 
     assert "继续观察" not in judgement
     assert "不要下重结论" not in judgement
     assert "监管" in judgement or "审批" in judgement or "制度" in judgement
     assert "继续观察" not in watch_reason
-    assert "审批" in watch_reason or "监管" in watch_reason or "pro-innovation" in watch_reason
+    assert (
+        "审批" in watch_reason
+        or "监管" in watch_reason
+        or "pro-innovation" in watch_reason
+    )
+
+
+def test_build_report_context_excludes_low_signal_accounts_from_body():
+    service = KolService.__new__(KolService)
+    service.settings = SimpleNamespace(timezone="Asia/Shanghai")
+    service.deepseek = DummyDeepSeek()
+    service.logger = object()
+
+    profiles = [
+        KolProfile(
+            username="CredibleCrypto",
+            role="周期技术分析师",
+            category="技术分析 / 周期",
+            group_name="交易盘面/技术分析",
+        ),
+        KolProfile(
+            username="thankUcrypto",
+            role="中文交易博主",
+            category="交易 / 情绪",
+            group_name="华语头部大V",
+        ),
+    ]
+    informative_hit = KolHit(
+        group_name="交易盘面/技术分析",
+        username="CredibleCrypto",
+        role="周期技术分析师",
+        category="技术分析 / 周期",
+        posts=[
+            TweetRecord(
+                id="eth_thesis",
+                text="ETH is not dead. Sentiment looks similar to the last major bottom and an ETH season can still return from this setup.",
+                author_username="CredibleCrypto",
+                created_at=datetime(2026, 7, 3, 2, 0, tzinfo=timezone.utc),
+                like_count=350,
+                retweet_count=30,
+                reply_count=18,
+                quote_count=4,
+            ),
+        ],
+    )
+    low_signal_hit = KolHit(
+        group_name="华语头部大V",
+        username="thankUcrypto",
+        role="中文交易博主",
+        category="交易 / 情绪",
+        posts=[
+            TweetRecord(
+                id="emotion_only",
+                text="不是黄金时代 廉价机票 放下手机 相互拥抱吗 怎么特么的还在跌",
+                author_username="thankUcrypto",
+                created_at=datetime(2026, 7, 3, 2, 0, tzinfo=timezone.utc),
+                like_count=100,
+                retweet_count=5,
+                reply_count=2,
+                quote_count=0,
+            ),
+        ],
+    )
+
+    context = service._build_report_context(
+        title="2026-07-03 加密KOL过去24小时监控报告",
+        start_dt=datetime(2026, 7, 2, 10, 0, tzinfo=timezone.utc),
+        end_dt=datetime(2026, 7, 3, 10, 0, tzinfo=timezone.utc),
+        now_dt=datetime(2026, 7, 3, 10, 0, tzinfo=timezone.utc),
+        profiles=profiles,
+        hits=[informative_hit, low_signal_hit],
+        fetched_accounts=["CredibleCrypto", "thankUcrypto"],
+        no_post_accounts=[],
+        fetch_error_accounts=[],
+    )
+
+    rendered_usernames = {
+        item["username"] for group in context["groups"] for item in group["hits"]
+    }
+    worth_reading_usernames = {
+        item["display_name"].lstrip("@") for item in context["worth_reading"]
+    }
+    focus_usernames = {item["username"] for item in context["focus_accounts"]}
+
+    assert context["hit_count"] == 1
+    assert "CredibleCrypto" in rendered_usernames
+    assert "thankUcrypto" not in rendered_usernames
+    assert "thankUcrypto" not in worth_reading_usernames
+    assert "thankUcrypto" not in focus_usernames
+    assert "thankUcrypto" in context["low_signal_accounts"]
