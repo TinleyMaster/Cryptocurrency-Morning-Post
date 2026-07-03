@@ -138,6 +138,7 @@ class KolService:
 
         doc_url = ""
         doc_note = ""
+        base_note = ""
         message_id = ""
         wecom_status = ""
         record_ids: list[str] = []
@@ -164,16 +165,20 @@ class KolService:
                     detail=str(exc),
                 )
 
+        record_ids, base_note = self._archive_base_records(payload)
         summary_markdown = self._build_summary_markdown(
             title=title,
             hit_count=len(hits),
             post_count=sum(len(hit.posts) for hit in hits),
-            record_count=len(payload.get("rows", [])),
+            record_count=len(record_ids),
+            base_note=base_note,
             doc_url=doc_url,
             doc_note=doc_note,
         )
         if self.publisher.can_send_summary():
-            message_id = self.publisher.send_summary(title=title, content=summary_markdown)
+            message_id = self.publisher.send_summary(
+                title=title, content=summary_markdown
+            )
         if self.wecom.has_webhook():
             try:
                 wecom_status = self.wecom.send_webhook_markdown_message(
@@ -188,8 +193,6 @@ class KolService:
                     status="warning",
                     detail=str(exc),
                 )
-        if self.publisher.can_write_base_records():
-            record_ids = self.publisher.batch_create_base_records(payload)
         log_event(
             self.logger,
             job="kol_report",
@@ -197,6 +200,7 @@ class KolService:
             status="success",
             doc_url=doc_url,
             doc_note=doc_note,
+            base_note=base_note,
             records=len(record_ids),
             message_id=message_id,
             wecom_status=wecom_status,
@@ -211,14 +215,43 @@ class KolService:
             "record_ids": record_ids,
         }
 
+    def _archive_base_records(self, payload: dict[str, Any]) -> tuple[list[str], str]:
+        blocker = self.publisher.get_base_archive_blocker()
+        if blocker:
+            note = f"未执行（{blocker}）"
+            log_event(
+                self.logger,
+                job="kol_report",
+                stage="feishu_base_archive",
+                status="skipped",
+                detail=blocker,
+            )
+            return [], note
+
+        try:
+            record_ids = self.publisher.batch_create_base_records(payload)
+        except Exception as exc:
+            note = f"失败（{exc}）"
+            log_event(
+                self.logger,
+                job="kol_report",
+                stage="feishu_base_archive",
+                status="warning",
+                detail=str(exc),
+            )
+            return [], note
+
+        return record_ids, ""
+
     def _build_summary_markdown(
         self,
         title: str,
         hit_count: int,
         post_count: int,
         record_count: int,
-        doc_url: str,
-        doc_note: str,
+        base_note: str = "",
+        doc_url: str = "",
+        doc_note: str = "",
     ) -> str:
         lines = [
             "今日加密 KOL 过去 24 小时监控报告已更新：",
@@ -226,8 +259,11 @@ class KolService:
             f"- 标题：{title}",
             f"- 命中账号：{hit_count}",
             f"- 有效帖子：{post_count}",
-            f"- Base 归档：{record_count} 条",
         ]
+        if base_note:
+            lines.append(f"- Base 归档：{base_note}")
+        else:
+            lines.append(f"- Base 归档：{record_count} 条")
         if doc_url:
             lines.append(f"- 云文档：{doc_url}")
         elif doc_note:

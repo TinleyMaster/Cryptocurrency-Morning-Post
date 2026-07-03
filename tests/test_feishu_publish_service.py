@@ -68,3 +68,19 @@ def test_get_doc_import_blocker_when_missing_app_credentials():
 
     assert service.get_doc_import_blocker() == "缺少 FEISHU_APP_ID / FEISHU_APP_SECRET"
     assert service.can_import_docs() is False
+
+
+def test_get_base_archive_blocker_when_missing_base_config():
+    client = DummyFeishuClient()
+    service = FeishuPublishService(
+        client,
+        {
+            "webhook_url": "https://open.feishu.cn/open-apis/bot/v2/hook/test",
+            "folder_token": "fld_xxx",
+        },
+    )
+
+    assert (
+        service.get_base_archive_blocker() == "缺少 FEISHU_BASE_TOKEN / FEISHU_TABLE_ID"
+    )
+    assert service.can_write_base_records() is False

@@ -30,9 +30,16 @@ class FeishuPublishService:
         )
 
     def can_write_base_records(self) -> bool:
-        return self.client.has_app_credentials() and bool(
-            self.feishu_config.get("base_token") and self.feishu_config.get("table_id")
-        )
+        return self.get_base_archive_blocker() is None
+
+    def get_base_archive_blocker(self) -> str | None:
+        if not self.client.has_app_credentials():
+            return "缺少 FEISHU_APP_ID / FEISHU_APP_SECRET"
+        if not self.feishu_config.get("base_token") or not self.feishu_config.get(
+            "table_id"
+        ):
+            return "缺少 FEISHU_BASE_TOKEN / FEISHU_TABLE_ID"
+        return None
 
     def import_markdown_as_docx(self, file_path: str | Path, title: str) -> str:
         folder_token = self.feishu_config.get("folder_token", "")
