@@ -459,6 +459,41 @@ def test_finalize_ai_output_rewrites_generic_empty_judgement_phrase():
     assert "错杀" in judgement or "反向" in judgement or "衰退" in judgement
 
 
+def test_finalize_core_rewrites_raw_english_post_echo():
+    service = KolService.__new__(KolService)
+    service.settings = SimpleNamespace(timezone="Asia/Shanghai")
+    service.deepseek = DummyDeepSeek()
+    service.logger = object()
+
+    hit = KolHit(
+        group_name="链上数据/比特币原生研究",
+        username="glassnode",
+        role="链上数据平台官方账号",
+        category="链上 / BTC",
+        posts=[],
+    )
+    post = TweetRecord(
+        id="options_signal",
+        text="The options market is currently pricing in low future volatility for $BTC. While upside expectations remain unchanged we see less demand for short exposure.",
+        author_username="glassnode",
+        created_at=datetime(2026, 7, 6, 2, 0, tzinfo=timezone.utc),
+        like_count=20,
+        retweet_count=2,
+        reply_count=1,
+        quote_count=0,
+    )
+
+    core = service._finalize_core(
+        "核心信息是：The options market is currently pricing in low future volatility for $BTC. While upside expectations remain unchanged we see less demand for short exposure.",
+        hit,
+        post,
+    )
+
+    assert "核心信息是：" not in core
+    assert "The options market" not in core
+    assert "波动" in core or "BTC" in core
+
+
 def test_build_report_context_excludes_low_signal_accounts_from_body():
     service = KolService.__new__(KolService)
     service.settings = SimpleNamespace(timezone="Asia/Shanghai")
@@ -700,6 +735,56 @@ def test_is_informative_post_filters_generic_protocol_marketing():
     assert service._is_informative_post(post, hit) is False
 
 
+def test_is_informative_post_filters_offtopic_sports_for_etf_analyst():
+    service = KolService.__new__(KolService)
+    service.settings = SimpleNamespace(timezone="Asia/Shanghai")
+    service.deepseek = DummyDeepSeek()
+    service.logger = object()
+
+    hit = KolHit(
+        group_name="合规/美国监管/ETF赛道",
+        username="EricBalchunas",
+        role="ETF分析师",
+        category="ETF / 机构流向",
+        posts=[],
+    )
+    post = TweetRecord(
+        id="sports",
+        text="Amazing assist and goal by the son of Thor. Looks extra cool in slow mo. Norway seems like they having fun out there. Brazil meanwhile seemed victim to selfish play.",
+        author_username="EricBalchunas",
+        created_at=datetime(2026, 7, 6, 2, 0, tzinfo=timezone.utc),
+        like_count=120,
+        retweet_count=6,
+        reply_count=4,
+        quote_count=0,
+    )
+
+    assert service._is_informative_post(post, hit) is False
+
+
+def test_detect_tags_do_not_inherit_topic_from_account_category():
+    service = KolService.__new__(KolService)
+    hit = KolHit(
+        group_name="合规/美国监管/ETF赛道",
+        username="EricBalchunas",
+        role="ETF分析师",
+        category="ETF / 机构流向",
+        posts=[],
+    )
+    post = TweetRecord(
+        id="sports",
+        text="Amazing assist and goal by Brazil in the match.",
+        author_username="EricBalchunas",
+        created_at=datetime(2026, 7, 6, 2, 0, tzinfo=timezone.utc),
+    )
+
+    topics, assets, type_tags = service._detect_tags(hit, post)
+
+    assert "ETF" not in topics
+    assert assets == []
+    assert "Framework" in type_tags
+
+
 def test_is_informative_post_accepts_chinese_macro_btc_post():
     service = KolService.__new__(KolService)
     service.settings = SimpleNamespace(timezone="Asia/Shanghai")
@@ -764,8 +849,6 @@ def test_is_post_in_window_accepts_date_precision_posts_on_boundary_day():
         created_at_precision="date",
     )
 
-    now_dt = datetime(2026, 7, 3, 14, 21, tzinfo=timezone.utc).astimezone(
-        timezone.utc
-    )
+    now_dt = datetime(2026, 7, 3, 14, 21, tzinfo=timezone.utc).astimezone(timezone.utc)
 
     assert service._is_post_in_window(post, now_dt) is True

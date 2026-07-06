@@ -604,8 +604,8 @@ class KolService:
             "4. worth_reading 优先覆盖全部高信息量帖子，不要机械限制在 8 条；通常输出 6-15 条，并且 tweet_id 必须来自输入数据。"
             "5. tags 使用 #KOL/#Topic/#Asset/#Type/#Date 体系。"
             "6. 明确排除 reply/repost/纯闲聊/表情包/体育或生活类跑题内容，优先选择原生观点表达、框架帖、机制分析、政策解读、产品进展。"
-            "7. core 必须写出这条帖子的主张或信息增量，不能只复述情绪。"
-            "8. judgement 必须给出明确结论，例如偏多/偏空/偏中性、长期/短线、制度增量/产品进展/结构转强，不要写“继续观察”“线索跟踪”“不要下重结论”之类空话。"
+            "7. core 必须写出这条帖子的主张或信息增量，使用中文改写，不要大段照抄原帖英文原文，也不要写“核心信息是：原文摘录”。"
+            "8. judgement 必须给出明确结论，例如偏多/偏空/偏中性、长期/短线、制度增量/产品进展/结构转强，并且要结合该帖具体内容，不要给所有账号重复同一句套话。"
             "9. watch_reason 必须指出后续要观察的具体变量，如 ETF 审批节奏、收益产品扩张、价格结构是否延续、资金是否轮动，不要写泛泛的“是否强化观点”。"
             "10. 如果某个账号只有情绪帖或闲聊帖，就不要把它放进 groups 或 worth_reading。"
             "11. 纯协议宣传、品牌口号、泛政治/阴谋论/社会评论、与加密投资主线弱相关的股市闲聊，也不要纳入正文。"
@@ -783,7 +783,7 @@ class KolService:
     def _detect_tags(
         self, hit: KolHit, post: TweetRecord
     ) -> tuple[list[str], list[str], list[str]]:
-        text = f"{hit.category} {post.text}".lower()
+        text = (post.text or "").lower()
         topic_rules = [
             (
                 "Market",
@@ -800,7 +800,23 @@ class KolService:
             ),
             ("BTC", ["bitcoin", "btc"]),
             ("ETH", ["ethereum", "eth"]),
-            ("Macro", ["macro", "fed", "nonfarm", "cpi", "inflation", "rates"]),
+            (
+                "Macro",
+                [
+                    "macro",
+                    "fed",
+                    "nonfarm",
+                    "cpi",
+                    "inflation",
+                    "rates",
+                    "美联储",
+                    "非农",
+                    "通胀",
+                    "利率",
+                    "降息",
+                    "加息",
+                ],
+            ),
             ("ETF", ["etf", "sec"]),
             ("Stablecoin", ["stablecoin", "usdc", "usdt", "ousd"]),
             ("Yield", ["yield", "apy", "earn", "savings", "morpho", "spark"]),
@@ -889,6 +905,8 @@ class KolService:
         if self._looks_like_pure_emotion(text):
             return False
         if self._looks_like_offtopic_social_commentary(text):
+            return False
+        if self._looks_like_offtopic_sports_or_entertainment(text):
             return False
         if self._looks_like_generic_brand_marketing(text):
             return False
@@ -1054,6 +1072,50 @@ class KolService:
         return any(pattern in lowered for pattern in off_topic_patterns)
 
     @staticmethod
+    def _looks_like_offtopic_sports_or_entertainment(text: str) -> bool:
+        lowered = text.lower()
+        sports_patterns = [
+            "goal",
+            "assist",
+            "norway",
+            "brazil",
+            "match",
+            "stadium",
+            "slow mo",
+            "slow-mo",
+            "penalty",
+            "var ",
+            "world cup",
+            "football",
+            "soccer",
+            "世界杯",
+            "进球",
+            "比赛",
+            "球员",
+        ]
+        keep_keywords = [
+            "btc",
+            "bitcoin",
+            "eth",
+            "ethereum",
+            "crypto",
+            "etf",
+            "sec",
+            "stablecoin",
+            "yield",
+            "macro",
+            "nonfarm",
+            "inflation",
+            "rates",
+            "加密",
+            "比特币",
+            "以太坊",
+        ]
+        return any(pattern in lowered for pattern in sports_patterns) and not any(
+            keyword in lowered for keyword in keep_keywords
+        )
+
+    @staticmethod
     def _looks_like_generic_brand_marketing(text: str) -> bool:
         lowered = text.lower()
         promo_patterns = [
@@ -1193,35 +1255,46 @@ class KolService:
         ]
         if any(keyword in lowered for keyword in crypto_investment_keywords):
             return True
+        has_crypto_anchor = any(
+            keyword in lowered
+            for keyword in [
+                "btc",
+                "bitcoin",
+                "eth",
+                "ethereum",
+                "crypto",
+                "加密",
+                "比特币",
+                "以太坊",
+                "stablecoin",
+                "etf",
+                "sec",
+                "solana",
+                "tron",
+                "token",
+            ]
+        )
         if any(keyword in lowered for keyword in macro_keywords):
-            return True
+            if has_crypto_anchor:
+                return True
+            policy_macro_keywords = [
+                "fed",
+                "美联储",
+                "nonfarm",
+                "非农",
+                "inflation",
+                "通胀",
+                "rates",
+                "利率",
+                "降息",
+                "加息",
+                "fomc",
+                "cpi",
+            ]
+            return any(keyword in lowered for keyword in policy_macro_keywords)
         if any(keyword in lowered for keyword in market_structure_keywords):
-            has_asset_anchor = any(
-                keyword in lowered
-                for keyword in [
-                    "btc",
-                    "bitcoin",
-                    "eth",
-                    "ethereum",
-                    "solana",
-                    "tron",
-                    "token",
-                    "crypto",
-                    "加密",
-                    "比特币",
-                    "以太坊",
-                ]
-            )
-            return has_asset_anchor
-        category_lower = (hit.category or "").lower()
-        if "宏观" in hit.category and any(
-            keyword in lowered for keyword in macro_keywords
-        ):
-            return True
-        return any(
-            keyword in category_lower
-            for keyword in ["etf", "监管", "稳定币", "defi", "btc", "eth"]
-        ) and self._has_analysis_signal(text)
+            return has_crypto_anchor
+        return has_crypto_anchor and self._has_analysis_signal(text)
 
     @staticmethod
     def _has_analysis_signal(text: str) -> bool:
@@ -1304,7 +1377,11 @@ class KolService:
                     hit["tweet_url"] = ""
 
     def _finalize_core(self, candidate: str, hit: KolHit, post: TweetRecord) -> str:
-        if candidate and not self._is_vague_statement(candidate):
+        if (
+            candidate
+            and not self._is_vague_statement(candidate)
+            and not self._looks_like_raw_post_echo(candidate, post)
+        ):
             return candidate
         return self._build_specific_core(hit, post)
 
@@ -1376,8 +1453,38 @@ class KolService:
             for keyword in ["nonfarm", "inflation", "rates", "fomc", "macro"]
         ):
             return "把 `非农 / 利率 / 通胀 / 风险资产表现` 放进同一交易框架里看，重点是给出事件窗口与价格带之间的映射。"
-        text = self._summarize_text(post.text, 160)
-        return f"核心信息是：{text}"
+        if any(
+            keyword in lowered
+            for keyword in ["options market", "volatility", "short exposure", "hedge"]
+        ):
+            return "围绕 `BTC 波动率与下行对冲需求` 给出判断，核心信息是市场并未重新定价更深的恐慌式下跌。"
+        if any(
+            keyword in lowered
+            for keyword in [
+                "revenue",
+                "tvl",
+                "inflow",
+                "holding strong positions",
+                "underperforming",
+            ]
+        ):
+            return "围绕 `组合配置与强弱轮动` 给出明确取舍，核心是继续持有强资产、下调弱势仓位并跟踪新的补涨方向。"
+        if any(
+            keyword in lowered
+            for keyword in [
+                "onchain revenue",
+                "pure play",
+                "commoditize",
+                "network effects",
+            ]
+        ):
+            return "讨论 `协议价值` 与 `链下产品` 的关系，核心结论是应把链下能力商品化，才能把价值沉淀回协议层。"
+        topics, assets, _ = self._detect_tags(hit, post)
+        topic_text = " / ".join(topics[:2]) if topics else hit.category
+        asset_text = "、".join(assets[:3])
+        if asset_text:
+            return f"围绕 `{topic_text}` 展开，重点资产是 `{asset_text}`，核心增量在于给出更明确的强弱排序和后续验证变量。"
+        return f"围绕 `{topic_text}` 给出更清晰的交易框架，重点不是复述市场噪音，而是指出后续该看哪类变量。"
 
     def _build_specific_judgement(self, hit: KolHit, post: TweetRecord) -> str:
         lowered = (post.text or "").lower()
@@ -1428,7 +1535,40 @@ class KolService:
             for keyword in ["nonfarm", "inflation", "rates", "fomc", "macro"]
         ):
             return "偏事件驱动交易视角，结论不是一味看多或看空，而是强调宏观数据会决定风险资产节奏和仓位管理。"
-        return "这条内容提供的是可交易的框架或变量，而不是单纯情绪表达，关键在于后续是否被更多账号和价格走势验证。"
+        if any(
+            keyword in lowered
+            for keyword in ["options market", "volatility", "short exposure", "hedge"]
+        ):
+            return "偏中性偏稳健，说明市场更像在定价低波动震荡，而不是在为更深的 BTC 下杀做准备。"
+        if any(
+            keyword in lowered
+            for keyword in [
+                "revenue",
+                "tvl",
+                "inflow",
+                "holding strong positions",
+                "underperforming",
+            ]
+        ):
+            return "偏强者恒强的配置思路，资金更愿意继续留在有收入、TVL 或相对强势支撑的资产上。"
+        if any(
+            keyword in lowered
+            for keyword in [
+                "onchain revenue",
+                "pure play",
+                "commoditize",
+                "network effects",
+            ]
+        ):
+            return "偏协议价值重估逻辑，意味着真正值得给估值溢价的仍是网络效应更强的协议层。"
+        topics, assets, _ = self._detect_tags(hit, post)
+        if "BTC" in topics or "BTC" in assets:
+            return "偏 `BTC 主线延续` 的判断，重点不是追高，而是确认强势是否还能在后续波动中保持。"
+        if "ETH" in topics or "ETH" in assets:
+            return "偏 `ETH 修复` 视角，说明市场开始重新评估此前过度悲观的定价。"
+        if "Stablecoin" in topics or "Yield" in topics:
+            return "偏产品机制增量，说明这条线真正值得跟踪的是商业模式和用户采用，而不是概念热度。"
+        return "偏结构化筛选思路，说明当前更应该区分强弱与兑现路径，而不是把所有题材一概而论。"
 
     def _build_specific_watch_reason(self, hit: KolHit, post: TweetRecord) -> str:
         lowered = (post.text or "").lower()
@@ -1507,6 +1647,34 @@ class KolService:
             return candidate
         return self._build_one_liner(hits)
 
+    def _looks_like_raw_post_echo(self, candidate: str, post: TweetRecord) -> bool:
+        normalized_candidate = re.sub(r"\s+", " ", candidate or "").strip().lower()
+        normalized_post = re.sub(r"\s+", " ", post.text or "").strip().lower()
+        if not normalized_candidate or not normalized_post:
+            return False
+        if normalized_candidate.startswith(
+            "核心信息是："
+        ) or normalized_candidate.startswith("核心信息是:"):
+            return True
+        if len(re.findall(r"[A-Za-z]{4,}", normalized_candidate)) >= 12:
+            return True
+        candidate_tokens = {
+            token
+            for token in re.findall(r"[a-z0-9]+", normalized_candidate)
+            if len(token) >= 4
+        }
+        post_tokens = {
+            token
+            for token in re.findall(r"[a-z0-9]+", normalized_post)
+            if len(token) >= 4
+        }
+        if not candidate_tokens or not post_tokens:
+            return False
+        overlap_ratio = len(candidate_tokens & post_tokens) / max(
+            len(candidate_tokens), 1
+        )
+        return overlap_ratio >= 0.7
+
     def _build_one_liner(self, hits: list[KolHit]) -> str:
         if not hits:
             return "今天没有拿到足够的高信号帖子，优先排查抓取链路和样本命中情况。"
@@ -1566,6 +1734,9 @@ class KolService:
             "这条内容更像",
             "定性判断",
             "而不是单纯情绪",
+            "可交易的框架或变量",
+            "关键在于后续是否",
+            "不是单纯情绪表达",
         ]
         return any(pattern in lowered for pattern in vague_patterns)
 
