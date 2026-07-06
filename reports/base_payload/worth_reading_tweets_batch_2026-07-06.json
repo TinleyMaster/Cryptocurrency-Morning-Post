@@ -29,12 +29,12 @@
       "topic": "BTC",
       "asset": "BTC",
       "type_tag": "Framework",
-      "likes": 13358,
-      "retweets": 1459,
-      "replies": 1118,
-      "quotes": 334,
+      "likes": 13765,
+      "retweets": 1499,
+      "replies": 1143,
+      "quotes": 337,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-06T08:15:08.891138+08:00"
+      "crawled_at": "2026-07-06T10:06:50.160400+08:00"
     },
     {
       "tweet_id": "2073668602222252124",
@@ -47,12 +47,12 @@
       "topic": "BTC, Yield",
       "asset": "BTC",
       "type_tag": "PolicyReadout, Productization",
-      "likes": 6499,
-      "retweets": 608,
-      "replies": 568,
+      "likes": 6684,
+      "retweets": 620,
+      "replies": 579,
       "quotes": 71,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-06T08:15:08.891138+08:00"
+      "crawled_at": "2026-07-06T10:06:50.160400+08:00"
     },
     {
       "tweet_id": "2073659944956568016",
@@ -65,12 +65,12 @@
       "topic": "Macro",
       "asset": "",
       "type_tag": "Framework",
-      "likes": 4233,
-      "retweets": 376,
-      "replies": 120,
-      "quotes": 33,
+      "likes": 4412,
+      "retweets": 388,
+      "replies": 123,
+      "quotes": 35,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-06T08:15:08.891138+08:00"
+      "crawled_at": "2026-07-06T10:06:50.160400+08:00"
     },
     {
       "tweet_id": "2073649287796519274",
@@ -83,12 +83,12 @@
       "topic": "",
       "asset": "",
       "type_tag": "Framework",
-      "likes": 76,
-      "retweets": 10,
-      "replies": 40,
+      "likes": 100,
+      "retweets": 16,
+      "replies": 42,
       "quotes": 3,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-06T08:15:08.891138+08:00"
+      "crawled_at": "2026-07-06T10:06:50.160400+08:00"
     },
     {
       "tweet_id": "2073710528116175278",
@@ -101,30 +101,12 @@
       "topic": "BTC",
       "asset": "BTC",
       "type_tag": "Framework",
-      "likes": 63,
-      "retweets": 6,
-      "replies": 31,
-      "quotes": 1,
+      "likes": 96,
+      "retweets": 12,
+      "replies": 34,
+      "quotes": 2,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-06T08:15:08.891138+08:00"
-    },
-    {
-      "tweet_id": "2073724822694354979",
-      "report_date": "2026-07-06",
-      "kol": "CryptoMichNL",
-      "tweet_url": "https://x.com/CryptoMichNL/status/2073724822694354979",
-      "tweet_created_at": "2026-07-05T11:05:00+00:00",
-      "text": "Multiple assets are breaking above their 21-Day and 50-Day MA's for the first time in nearly a year.\\n\\n$ETHFI is another one. \\n\\nWhat does this tell to me? It's telling me that we're going to see a strong DeFi run over the coming period. \\n\\nQuite strongly this is influenced due to the approval of the Clarity Act (or the potential approval).\\n\\nAny dips I'm interested into buying, and I think there's a lot of upside to come from here towards the next resistance.",
-      "tags": "#KOL/CryptoMichNL, #Topic/ETH, #Topic/Altcoins, #Asset/ETH, #Asset/NEAR, #Type/TA, #Type/PolicyReadout, #Date/2026-07-06",
-      "topic": "ETH, Altcoins",
-      "asset": "ETH, NEAR",
-      "type_tag": "TA, PolicyReadout",
-      "likes": 145,
-      "retweets": 167,
-      "replies": 35,
-      "quotes": 0,
-      "crawl_status": "ok",
-      "crawled_at": "2026-07-06T08:15:08.891138+08:00"
+      "crawled_at": "2026-07-06T10:06:50.160400+08:00"
     },
     {
       "tweet_id": "2073712994219913485",
@@ -137,12 +119,30 @@
       "topic": "BTC, ETH",
       "asset": "BTC, ETH",
       "type_tag": "TA",
-      "likes": 274,
-      "retweets": 24,
-      "replies": 36,
+      "likes": 296,
+      "retweets": 28,
+      "replies": 37,
       "quotes": 1,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-06T08:15:08.891138+08:00"
+      "crawled_at": "2026-07-06T10:06:50.160400+08:00"
+    },
+    {
+      "tweet_id": "2073724822694354979",
+      "report_date": "2026-07-06",
+      "kol": "CryptoMichNL",
+      "tweet_url": "https://x.com/CryptoMichNL/status/2073724822694354979",
+      "tweet_created_at": "2026-07-05T11:05:00+00:00",
+      "text": "Multiple assets are breaking above their 21-Day and 50-Day MA's for the first time in nearly a year.\\n\\n$ETHFI is another one. \\n\\nWhat does this tell to me? It's telling me that we're going to see a strong DeFi run over the coming period. \\n\\nQuite strongly this is influenced due to the approval of the Clarity Act (or the potential approval).\\n\\nAny dips I'm interested into buying, and I think there's a lot of upside to come from here towards the next resistance.",
+      "tags": "#KOL/CryptoMichNL, #Topic/ETH, #Topic/Altcoins, #Asset/ETH, #Asset/NEAR, #Type/TA, #Type/PolicyReadout, #Date/2026-07-06",
+      "topic": "ETH, Altcoins",
+      "asset": "ETH, NEAR",
+      "type_tag": "TA, PolicyReadout",
+      "likes": 146,
+      "retweets": 167,
+      "replies": 35,
+      "quotes": 0,
+      "crawl_status": "ok",
+      "crawled_at": "2026-07-06T10:06:50.160400+08:00"
     },
     {
       "tweet_id": "2073807793644073061",
@@ -155,12 +155,12 @@
       "topic": "Market, Macro",
       "asset": "HYPE",
       "type_tag": "Framework",
-      "likes": 336,
-      "retweets": 13,
-      "replies": 44,
+      "likes": 371,
+      "retweets": 15,
+      "replies": 46,
       "quotes": 6,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-06T08:15:08.891138+08:00"
+      "crawled_at": "2026-07-06T10:06:50.160400+08:00"
     },
     {
       "tweet_id": "2073787398652076463",
@@ -173,30 +173,12 @@
       "topic": "Market, BTC",
       "asset": "BTC",
       "type_tag": "TA",
-      "likes": 337,
-      "retweets": 34,
-      "replies": 36,
+      "likes": 346,
+      "retweets": 38,
+      "replies": 37,
       "quotes": 1,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-06T08:15:08.891138+08:00"
-    },
-    {
-      "tweet_id": "2073893808790450284",
-      "report_date": "2026-07-06",
-      "kol": "EricBalchunas",
-      "tweet_url": "https://x.com/EricBalchunas/status/2073893808790450284",
-      "tweet_created_at": "2026-07-05T22:16:29+00:00",
-      "text": "Amazing assist and goal by the son of Thor. Looks extra cool in slow mo. Norway seems like they having fun out there. Brazil meanwhile seemed victim to selfishness, a few plays I saw where the guy shot but one more pass would have been better. In bball we call that hero ball. Hard to win it all that way.",
-      "tags": "#KOL/EricBalchunas, #Topic/ETF, #Type/Framework, #Date/2026-07-06",
-      "topic": "ETF",
-      "asset": "",
-      "type_tag": "Framework",
-      "likes": 56,
-      "retweets": 2,
-      "replies": 7,
-      "quotes": 0,
-      "crawl_status": "ok",
-      "crawled_at": "2026-07-06T08:15:08.891138+08:00"
+      "crawled_at": "2026-07-06T10:06:50.160400+08:00"
     },
     {
       "tweet_id": "2073748640493895987",
@@ -205,16 +187,34 @@
       "tweet_url": "https://x.com/EricBalchunas/status/2073748640493895987",
       "tweet_created_at": "2026-07-05T12:39:38+00:00",
       "text": "Looking fwd to reading @MebFaber's well-timed latest book on the mighty US stock market which I think has strong case as Eighth Wonder of the World. It looks like a great mix of US history and hard won financial knowledge delivered coffee table book style. https://t.co/X8E5reYIr2",
-      "tags": "#KOL/EricBalchunas, #Topic/Market, #Topic/ETF, #Asset/TRX, #Type/Framework, #Date/2026-07-06",
-      "topic": "Market, ETF",
+      "tags": "#KOL/EricBalchunas, #Topic/Market, #Asset/TRX, #Type/Framework, #Date/2026-07-06",
+      "topic": "Market",
       "asset": "TRX",
       "type_tag": "Framework",
-      "likes": 64,
+      "likes": 68,
       "retweets": 2,
       "replies": 13,
       "quotes": 1,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-06T08:15:08.891138+08:00"
+      "crawled_at": "2026-07-06T10:06:50.160400+08:00"
+    },
+    {
+      "tweet_id": "2073779520616763526",
+      "report_date": "2026-07-06",
+      "kol": "EricBalchunas",
+      "tweet_url": "https://x.com/EricBalchunas/status/2073779520616763526",
+      "tweet_created_at": "2026-07-05T14:42:21+00:00",
+      "text": "If the Eagles or Sixers had second round playoff game at 1am, I would personally go to bed. Then I’d wake up rested and if they won, I’d be like yeah nice! and if they lost, I’d say that sux but at least I wont be dead ass tired all day at work too",
+      "tags": "#KOL/EricBalchunas, #Topic/ETF, #Type/PolicyReadout, #Date/2026-07-06",
+      "topic": "ETF",
+      "asset": "",
+      "type_tag": "PolicyReadout",
+      "likes": 13,
+      "retweets": 0,
+      "replies": 4,
+      "quotes": 0,
+      "crawl_status": "ok",
+      "crawled_at": "2026-07-06T10:06:50.160400+08:00"
     },
     {
       "tweet_id": "2073784475452895392",
@@ -227,12 +227,30 @@
       "topic": "Market, BTC",
       "asset": "BTC",
       "type_tag": "Framework",
-      "likes": 145,
-      "retweets": 24,
-      "replies": 23,
+      "likes": 153,
+      "retweets": 25,
+      "replies": 22,
       "quotes": 0,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-06T08:15:08.891138+08:00"
+      "crawled_at": "2026-07-06T10:06:50.160400+08:00"
+    },
+    {
+      "tweet_id": "2073813609021583510",
+      "report_date": "2026-07-06",
+      "kol": "KuiGas",
+      "tweet_url": "https://x.com/KuiGas/status/2073813609021583510",
+      "tweet_created_at": "2026-07-05T16:57:48+00:00",
+      "text": "这个项目 $bill 2亿FDV开盘，最高拉了接近10倍，2周时间基本上让很多人知道Billions到底是干啥的。这次和Stable合作，重点应该不是简单联名，它要解决的不是钱包问题，而是谁在钱包背后、谁在负责、谁能被信任的问\\n\\nStable负责USDT原生结算，Billions负责可验证。\\nStable当时TGE其实算比较拉垮，市场表现和项目预期都一般，唯一比较大的看点，就是它和Tether/USDT生态的紧密关系。但如果未来 Agent支付、自动化交易、物理AI经济真的爆发，那么身份层一定会是基础设施之一。Billions现在押的就是这个位置。",
+      "tags": "#KOL/KuiGas, #Topic/ETH, #Topic/Stablecoin, #Asset/ETH, #Type/Framework, #Date/2026-07-06",
+      "topic": "ETH, Stablecoin",
+      "asset": "ETH",
+      "type_tag": "Framework",
+      "likes": 10,
+      "retweets": 0,
+      "replies": 8,
+      "quotes": 0,
+      "crawl_status": "ok",
+      "crawled_at": "2026-07-06T10:06:50.160400+08:00"
     },
     {
       "tweet_id": "2073787688218452244",
@@ -245,12 +263,12 @@
       "topic": "BTC",
       "asset": "BTC",
       "type_tag": "Framework",
-      "likes": 26,
-      "retweets": 3,
-      "replies": 6,
+      "likes": 51,
+      "retweets": 5,
+      "replies": 9,
       "quotes": 1,
       "crawl_status": "ok",
-      "crawled_at": "2026-07-06T08:15:08.891138+08:00"
+      "crawled_at": "2026-07-06T10:06:50.160400+08:00"
     }
   ]
 }
