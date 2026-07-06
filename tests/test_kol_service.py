@@ -61,9 +61,12 @@ def test_archive_base_records_downgrades_exception(monkeypatch):
     record_ids, note = service._archive_base_records({"rows": [{"tweet_id": "1"}]})
 
     assert record_ids == []
-    assert note.startswith("失败（Feishu API request failed")
+    assert (
+        note
+        == "未执行（飞书 Base 不存在、已删除或应用无权限，请检查 FEISHU_BASE_TOKEN / FEISHU_TABLE_ID）"
+    )
     assert events[0]["stage"] == "feishu_base_archive"
-    assert events[0]["status"] == "warning"
+    assert events[0]["status"] == "skipped"
 
 
 class DummyDeepSeek:

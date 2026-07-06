@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -18,7 +19,6 @@ from app.services.base_archive_service import BaseArchiveService
 from app.services.deepread_service import DeepreadService
 from app.services.feishu_publish_service import FeishuPublishService
 from app.utils.file_utils import write_utf8
-from datetime import datetime
 from app.utils.time_utils import (
     get_last_24h_window,
     is_in_last_24h,
@@ -1831,17 +1831,39 @@ class KolService:
         try:
             record_ids = self.publisher.batch_create_base_records(payload)
         except Exception as exc:
-            note = f"失败（{exc}）"
+            note = self._format_base_archive_error(exc)
+            status = "skipped" if note.startswith("未执行（") else "warning"
             log_event(
                 self.logger,
                 job="kol_report",
                 stage="feishu_base_archive",
-                status="warning",
+                status=status,
                 detail=str(exc),
             )
             return [], note
 
         return record_ids, ""
+
+    def _format_base_archive_error(self, exc: Exception) -> str:
+        message = str(exc)
+        if self._is_missing_or_inaccessible_base_target(message):
+            return "未执行（飞书 Base 不存在、已删除或应用无权限，请检查 FEISHU_BASE_TOKEN / FEISHU_TABLE_ID）"
+        return f"失败（{message}）"
+
+    def _is_missing_or_inaccessible_base_target(self, message: str) -> bool:
+        normalized = (message or "").upper()
+        patterns = (
+            "CODE=91402",
+            "MSG=NOTEXIST",
+            "WRONGBASETOKEN",
+            "WRONGTABLEID",
+            "BASETOKENNOTFOUND",
+            "TABLEIDNOTFOUND",
+            "NO PERMISSION",
+            "NO_PERMISSION",
+            "PERMISSION DENIED",
+        )
+        return any(pattern in normalized for pattern in patterns)
 
     def _build_summary_markdown(
         self,
