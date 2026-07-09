@@ -16,6 +16,8 @@ from app.clients.wecom_client import WeComClient
 from app.logger import log_event
 from app.models.market import (
     DefiLlamaMonitor,
+    DefiLlamaOpenInterestOverview,
+    DefiLlamaOptionsOverview,
     DefiLlamaOverview,
     DwellirHyperliquidMonitor,
     HeliusSolanaMonitor,
@@ -145,7 +147,9 @@ class MarketService:
                 doc_url=doc_url,
                 doc_note=doc_note,
             )
-            message_id = self.publisher.send_summary(title=title, content=summary_markdown)
+            message_id = self.publisher.send_summary(
+                title=title, content=summary_markdown
+            )
         else:
             summary_markdown = self._build_summary_markdown(
                 title=title,
@@ -285,16 +289,29 @@ class MarketService:
                     total_tvl="-",
                     change_1d="-",
                     change_7d="-",
-                    true_flow_24h="-",
                     dex_volume_24h="-",
                     dex_volume_change_7d="-",
-                    bridge_netflow_24h="-",
-                    bridge_note="-",
                     liquidation_24h="-",
                     liquidation_note="-",
                     risk_signal="-",
                     attribution_note="-",
                     summary=f"DefiLlama 资金监控数据暂不可用：{exc}",
+                ),
+                stablecoin_chain_summary="稳定币链分布暂不可用。",
+                stablecoin_chain_flows=[],
+                dex_chain_summary="DEX 链活跃度暂不可用。",
+                dex_chain_flows=[],
+                open_interest_summary="链上 OI 温度暂不可用。",
+                open_interest_overview=DefiLlamaOpenInterestOverview(
+                    total_open_interest="-",
+                    change_1d="-",
+                    summary="链上 OI 温度暂不可用。",
+                ),
+                options_summary="期权温度暂不可用。",
+                options_overview=DefiLlamaOptionsOverview(
+                    total_notional_24h="-",
+                    change_1d="-",
+                    summary="期权温度暂不可用。",
                 ),
                 chain_summary="主流链资金方向暂不可用。",
                 chain_flows=[],
@@ -304,6 +321,8 @@ class MarketService:
                 peg_risks=[],
                 protocol_summary="头部协议对比暂不可用。",
                 top_protocols=[],
+                fee_protocol_summary="协议手续费榜暂不可用。",
+                top_fee_protocols=[],
             )
         try:
             liquidation_24h = self.coinglass.get_total_liquidations_24h()

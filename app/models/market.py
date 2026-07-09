@@ -105,11 +105,8 @@ class DefiLlamaOverview:
     total_tvl: str
     change_1d: str
     change_7d: str
-    true_flow_24h: str
     dex_volume_24h: str
     dex_volume_change_7d: str
-    bridge_netflow_24h: str
-    bridge_note: str
     liquidation_24h: str
     liquidation_note: str
     risk_signal: str
@@ -123,8 +120,37 @@ class DefiLlamaChainFlow:
     tvl: str
     change_7d: str
     change_amount_7d: str
-    bridge_netflow_24h: str
     signal: str
+
+
+@dataclass
+class DefiLlamaStablecoinChain:
+    chain: str
+    stablecoin_mcap: str
+    change_7d: str
+    signal: str
+
+
+@dataclass
+class DefiLlamaDexChain:
+    chain: str
+    volume_24h: str
+    change_7d: str
+    signal: str
+
+
+@dataclass
+class DefiLlamaOpenInterestOverview:
+    total_open_interest: str
+    change_1d: str
+    summary: str
+
+
+@dataclass
+class DefiLlamaOptionsOverview:
+    total_notional_24h: str
+    change_1d: str
+    summary: str
 
 
 @dataclass
@@ -162,6 +188,14 @@ class DefiLlamaProtocol:
 @dataclass
 class DefiLlamaMonitor:
     overview: DefiLlamaOverview
+    stablecoin_chain_summary: str
+    stablecoin_chain_flows: list[DefiLlamaStablecoinChain]
+    dex_chain_summary: str
+    dex_chain_flows: list[DefiLlamaDexChain]
+    open_interest_summary: str
+    open_interest_overview: DefiLlamaOpenInterestOverview | None
+    options_summary: str
+    options_overview: DefiLlamaOptionsOverview | None
     chain_summary: str
     chain_flows: list[DefiLlamaChainFlow]
     category_summary: str
@@ -170,3 +204,5 @@ class DefiLlamaMonitor:
     peg_risks: list[DefiLlamaPegRisk]
     protocol_summary: str
     top_protocols: list[DefiLlamaProtocol]
+    fee_protocol_summary: str
+    top_fee_protocols: list[DefiLlamaProtocol]

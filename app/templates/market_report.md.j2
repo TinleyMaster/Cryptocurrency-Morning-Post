@@ -22,11 +22,8 @@
 - 稳定币 24h 供给变化：`{{ defillama.overview.stablecoin_supply_change_1d }}`
 - 全网 TVL：`{{ defillama.overview.total_tvl }}`
 - 全网 TVL 24h 变化：`{{ defillama.overview.change_1d }}`
-- 全网 TVL 真实资金流出量：`{{ defillama.overview.true_flow_24h }}`
 - DEX 24h 总交易量：`{{ defillama.overview.dex_volume_24h }}`
 - DEX 7d 变化：`{{ defillama.overview.dex_volume_change_7d }}`
-- 跨链桥 24h 净流量：`{{ defillama.overview.bridge_netflow_24h }}`
-- 跨链桥说明：{{ defillama.overview.bridge_note }}
 - 24h 清算总额：`{{ defillama.overview.liquidation_24h }}`
 - 清算说明：{{ defillama.overview.liquidation_note }}
 - 风险判断：{{ defillama.overview.risk_signal }}
@@ -36,11 +33,25 @@
 - 口径提示：{{ defillama.overview.attribution_note }}
 - 概括：{{ defillama.overview.summary }}
 
+### Stablecoin 链分布
+
+- 结论：{{ defillama.stablecoin_chain_summary }}
+{% for item in defillama.stablecoin_chain_flows -%}
+- `{{ item.chain }}`：稳定币规模 `{{ item.stablecoin_mcap }}`，7d `{{ item.change_7d }}`，判断：{{ item.signal }}
+{% endfor %}
+
+### DEX 活跃度
+
+- 结论：{{ defillama.dex_chain_summary }}
+{% for item in defillama.dex_chain_flows -%}
+- `{{ item.chain }}`：DEX 24h 成交额 `{{ item.volume_24h }}`，7d `{{ item.change_7d }}`，判断：{{ item.signal }}
+{% endfor %}
+
 ### Chains 公链页
 
 - 结论：{{ defillama.chain_summary }}
 {% for item in defillama.chain_flows -%}
-- `{{ item.name }}`：TVL `{{ item.tvl }}`，7d `{{ item.change_7d }}`，TVL 变化 `{{ item.change_amount_7d }}`，跨链桥 24h 净流量 `{{ item.bridge_netflow_24h }}`，判断：{{ item.signal }}
+- `{{ item.name }}`：TVL `{{ item.tvl }}`，7d `{{ item.change_7d }}`，TVL 变化 `{{ item.change_amount_7d }}`，判断：{{ item.signal }}
 {% endfor %}
 
 ### Categories 赛道页
@@ -63,6 +74,27 @@
 {% for protocol in defillama.top_protocols -%}
 - `{{ protocol.name }}` | {{ protocol.category }} | TVL `{{ protocol.tvl }}` | 1d `{{ protocol.change_1d }}` | 7d `{{ protocol.change_7d }}` | Mcap/TVL `{{ protocol.mcap_tvl }}` | Fees 24h `{{ protocol.fees_24h }}` | Revenue 24h `{{ protocol.revenue_24h }}` | 判断：{{ protocol.signal }}
 {% endfor %}
+
+### 协议手续费 / 收入榜
+
+- 结论：{{ defillama.fee_protocol_summary }}
+{% for protocol in defillama.top_fee_protocols -%}
+- `{{ protocol.name }}` | Fees 24h `{{ protocol.fees_24h }}` | Revenue 24h `{{ protocol.revenue_24h }}` | TVL `{{ protocol.tvl }}` | 判断：{{ protocol.signal }}
+{% endfor %}
+
+### 链上 OI 温度
+
+- 结论：{{ defillama.open_interest_summary }}
+- 总体 OI：`{{ defillama.open_interest_overview.total_open_interest }}`
+- 1d 变化：`{{ defillama.open_interest_overview.change_1d }}`
+- 概括：{{ defillama.open_interest_overview.summary }}
+
+### Options 温度
+
+- 结论：{{ defillama.options_summary }}
+- 24h 名义成交：`{{ defillama.options_overview.total_notional_24h }}`
+- 1d 变化：`{{ defillama.options_overview.change_1d }}`
+- 概括：{{ defillama.options_overview.summary }}
 
 ## Solana 链上活跃度
 

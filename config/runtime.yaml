@@ -1,8 +1,8 @@
-﻿timezone: Asia/Shanghai
+timezone: Asia/Shanghai
 language: zh-CN
 
 schedule:
-  market_cron: "5 0 * * *"
+  market_cron: "45 0 * * *"
   kol_cron: "10 2 * * *"
 
 output:

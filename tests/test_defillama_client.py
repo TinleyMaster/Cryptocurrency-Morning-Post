@@ -45,6 +45,26 @@ def test_defillama_client_builds_monitor_snapshot(monkeypatch):
             "total24h": 9_500_000_000,
             "change_7d": -12.5,
         },
+        "https://api.llama.fi/overview/open-interest?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true": {
+            "total24h": 4_200_000_000,
+            "change_1d": 6.8,
+        },
+        "https://api.llama.fi/overview/options?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true": {
+            "total24h": 1_100_000_000,
+            "change_1d": 4.2,
+        },
+        "https://api.llama.fi/overview/dexs/ethereum?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true": {
+            "total24h": 4_800_000_000,
+            "change_7d": -3.0,
+        },
+        "https://api.llama.fi/overview/dexs/solana?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true": {
+            "total24h": 2_600_000_000,
+            "change_7d": 12.0,
+        },
+        "https://api.llama.fi/overview/dexs/tron?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true": {
+            "total24h": 900_000_000,
+            "change_7d": -8.0,
+        },
         "https://api.llama.fi/protocols": [
             {"name": "Binance CEX", "tvl": 50_000_000_000, "category": "CEX"},
             {
@@ -99,7 +119,7 @@ def test_defillama_client_builds_monitor_snapshot(monkeypatch):
                 "change_7d": -2.0,
             },
         ],
-        "https://stablecoins.llama.fi/stablecoins": {
+        "https://api.llama.fi/stablecoins": {
             "peggedAssets": [
                 {
                     "symbol": "USDT",
@@ -143,14 +163,27 @@ def test_defillama_client_builds_monitor_snapshot(monkeypatch):
                 },
             ]
         },
-        "https://bridges.llama.fi/bridgevolume/all": [
-            {"date": "1", "depositUSD": 4_000_000_000, "withdrawUSD": 5_200_000_000}
+        "https://api.llama.fi/stablecoinchains": [
+            {"name": "Ethereum", "totalCirculating": 100_000_000_000},
+            {"name": "Tron", "totalCirculating": 55_000_000_000},
+            {"name": "Solana", "totalCirculating": 12_000_000_000},
+            {"name": "Base", "totalCirculating": 8_000_000_000},
         ],
-        "https://bridges.llama.fi/bridgevolume/Ethereum": [
-            {"date": "1", "depositUSD": 900_000_000, "withdrawUSD": 1_300_000_000}
+        "https://api.llama.fi/stablecoincharts/Ethereum": [
+            {"date": 1, "totalCirculating": 95_000_000_000},
+            {"date": 8, "totalCirculating": 100_000_000_000},
         ],
-        "https://bridges.llama.fi/bridgevolume/Solana": [
-            {"date": "1", "depositUSD": 800_000_000, "withdrawUSD": 500_000_000}
+        "https://api.llama.fi/stablecoincharts/Tron": [
+            {"date": 1, "totalCirculating": 56_000_000_000},
+            {"date": 8, "totalCirculating": 55_000_000_000},
+        ],
+        "https://api.llama.fi/stablecoincharts/Solana": [
+            {"date": 1, "totalCirculating": 10_000_000_000},
+            {"date": 8, "totalCirculating": 12_000_000_000},
+        ],
+        "https://api.llama.fi/stablecoincharts/Base": [
+            {"date": 1, "totalCirculating": 7_500_000_000},
+            {"date": 8, "totalCirculating": 8_000_000_000},
         ],
         "https://api.llama.fi/summary/fees/lido?dataType=dailyFees": {
             "total24h": 3_000_000
@@ -194,21 +227,42 @@ def test_defillama_client_builds_monitor_snapshot(monkeypatch):
     assert monitor.overview.total_tvl == "$170.00B"
     assert monitor.overview.change_1d == "+$10.00B"
     assert monitor.overview.change_7d == "+$70.00B"
-    assert monitor.overview.true_flow_24h == "需 DefiLlama Pro inflows"
     assert monitor.overview.dex_volume_24h == "$9.50B"
     assert monitor.overview.dex_volume_change_7d == "-12.50%"
-    assert monitor.overview.bridge_netflow_24h == "-$1.20B"
-    assert monitor.overview.bridge_note == ""
     assert monitor.overview.liquidation_24h == "待配置官方 API"
     assert "COINGLASS_API_KEY" in monitor.overview.liquidation_note
     assert monitor.overview.risk_signal == "资金面中性偏观望，继续盯清算与桥流量"
-    assert "Price Drop" in monitor.overview.attribution_note
+    assert "真实资金净流入/流出" in monitor.overview.attribution_note
     assert "风险判断" in monitor.overview.summary
-    assert monitor.chain_summary == "跨链资金以普出为主，尚未出现明确抱团。"
+    assert (
+        monitor.stablecoin_chain_summary
+        == "稳定币增量开始扩散，当前净流入主要集中在 Ethereum / Solana。"
+    )
+    assert monitor.stablecoin_chain_flows[0].chain == "Ethereum"
+    assert monitor.stablecoin_chain_flows[0].stablecoin_mcap == "$100.00B"
+    assert monitor.stablecoin_chain_flows[0].change_7d == "+5.26%"
+    assert monitor.stablecoin_chain_flows[0].signal == "稳定币净流入"
+    assert monitor.stablecoin_chain_flows[1].chain == "Tron"
+    assert monitor.stablecoin_chain_flows[1].signal == "轻微流出"
+    assert monitor.dex_chain_summary == "链上成交修复仍集中在 Solana，扩散尚不明显。"
+    assert monitor.dex_chain_flows[0].chain == "Ethereum"
+    assert monitor.dex_chain_flows[0].volume_24h == "$4.80B"
+    assert monitor.dex_chain_flows[0].signal == "高基数回落"
+    assert monitor.dex_chain_flows[1].chain == "Solana"
+    assert monitor.dex_chain_flows[1].change_7d == "+12.00%"
+    assert monitor.dex_chain_flows[1].signal == "活跃修复"
+    assert monitor.open_interest_summary == "链上杠杆显著抬升，需警惕追涨阶段的脆弱性。"
+    assert monitor.open_interest_overview is not None
+    assert monitor.open_interest_overview.total_open_interest == "$4.20B"
+    assert monitor.open_interest_overview.change_1d == "+6.80%"
+    assert monitor.options_summary == "期权成交温和回暖，波动预期略有抬升。"
+    assert monitor.options_overview is not None
+    assert monitor.options_overview.total_notional_24h == "$1.10B"
+    assert monitor.options_overview.change_1d == "+4.20%"
+    assert monitor.chain_summary == "主流链 TVL 变化以普跌为主，尚未出现明确抱团。"
     assert monitor.chain_flows[0].name == "Ethereum"
-    assert monitor.chain_flows[0].bridge_netflow_24h == "-$400.00M"
-    assert monitor.chain_flows[0].signal == "桥流量偏流出"
-    assert monitor.chain_flows[1].bridge_netflow_24h == "+$300.00M"
+    assert monitor.chain_flows[0].signal == "TVL 承压"
+    assert monitor.chain_flows[1].signal == "TVL 修复"
     assert monitor.category_summary == "质押 / 借贷 持续失血，赛道层面偏系统性走弱。"
     assert monitor.category_flows[0].name == "质押"
     assert monitor.category_flows[0].signal == "持续失血"
@@ -224,4 +278,8 @@ def test_defillama_client_builds_monitor_snapshot(monkeypatch):
     assert monitor.top_protocols[0].fees_24h == "$3.00M"
     assert monitor.top_protocols[0].revenue_24h == "$300.00K"
     assert monitor.top_protocols[0].signal == "弱势"
+    assert monitor.fee_protocol_summary == "经营现金流仍集中在 Uniswap 等少数头部协议。"
+    assert monitor.top_fee_protocols[0].name == "Uniswap"
+    assert monitor.top_fee_protocols[0].fees_24h == "$5.00M"
+    assert monitor.top_fee_protocols[0].revenue_24h == "$850.00K"
     assert all(protocol.category != "CEX" for protocol in monitor.top_protocols)
