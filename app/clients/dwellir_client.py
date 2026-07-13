@@ -47,7 +47,9 @@ class DwellirClient:
             rows.append(row)
 
         if not rows:
-            missing = ", ".join(missing_symbols) if missing_symbols else ", ".join(symbols)
+            missing = (
+                ", ".join(missing_symbols) if missing_symbols else ", ".join(symbols)
+            )
             raise RuntimeError(f"Dwellir 未返回可用的 Hyperliquid 市场数据：{missing}")
 
         total_volume = sum(float(item["volume_24h"]) for item in rows)
@@ -72,7 +74,9 @@ class DwellirClient:
                 price=self._format_price(float(item["price"])),
                 change_24h=self._format_percent(float(item["change_pct"])),
                 volume_24h=self._format_money(float(item["volume_24h"])),
-                funding_rate=self._format_percent(float(item["funding_rate_raw"]) * 100),
+                funding_rate=self._format_percent(
+                    float(item["funding_rate_raw"]) * 100
+                ),
                 open_interest=self._format_money(float(item["open_interest_usd"])),
                 signal=item["signal"],
             )
@@ -100,7 +104,11 @@ class DwellirClient:
         mids: dict[str, Any],
     ) -> dict[str, Any] | None:
         index = next(
-            (i for i, item in enumerate(universe) if str(item.get("name", "")).upper() == symbol),
+            (
+                i
+                for i, item in enumerate(universe)
+                if str(item.get("name", "")).upper() == symbol
+            ),
             None,
         )
         if index is None or index >= len(asset_contexts):
@@ -111,7 +119,9 @@ class DwellirClient:
             mids.get(symbol) or context.get("midPx") or context.get("markPx")
         )
         prev_day_price = self._to_float(context.get("prevDayPx"))
-        change_pct = ((price - prev_day_price) / prev_day_price * 100) if prev_day_price else 0.0
+        change_pct = (
+            ((price - prev_day_price) / prev_day_price * 100) if prev_day_price else 0.0
+        )
         volume_24h = self._to_float(context.get("dayNtlVlm"))
         funding_rate = self._to_float(context.get("funding"))
         open_interest_base = self._to_float(context.get("openInterest"))
@@ -141,8 +151,8 @@ class DwellirClient:
             if not self._should_fallback_to_public(exc):
                 raise
             fallback_note = (
-                "Dwellir Info Endpoint 对该请求返回 422，"
-                "已自动回退官方 Hyperliquid endpoint。"
+                "Dwellir Info Endpoint rejected this request type; "
+                "automatically fell back to the official Hyperliquid endpoint."
             )
             return (
                 self._post_info(
@@ -192,24 +202,35 @@ class DwellirClient:
         message = str(exc)
         return (
             "status=422" in message
+            or "status=403" in message
+            and "type not allowed" in message
             or "Failed to deserialize the JSON body into the target type" in message
             or "non-JSON response" in message
+            or "type not allowed" in message
         )
 
     @staticmethod
-    def _unpack_meta_payload(payload: Any) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    def _unpack_meta_payload(
+        payload: Any,
+    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         if not isinstance(payload, list) or len(payload) != 2:
-            raise RuntimeError(f"Unexpected Dwellir metaAndAssetCtxs response: {payload}")
+            raise RuntimeError(
+                f"Unexpected Dwellir metaAndAssetCtxs response: {payload}"
+            )
         meta = payload[0] if isinstance(payload[0], dict) else {}
         asset_contexts = payload[1] if isinstance(payload[1], list) else []
         return meta, asset_contexts
 
     def _ensure_api_key(self) -> None:
         if not self.api_key:
-            raise RuntimeError("DWELLIR_API_KEY 未配置，无法获取 Hyperliquid 市场温度。")
+            raise RuntimeError(
+                "DWELLIR_API_KEY 未配置，无法获取 Hyperliquid 市场温度。"
+            )
 
     @staticmethod
-    def _classify_signal(change_pct: float, funding_rate: float, volume_24h: float) -> str:
+    def _classify_signal(
+        change_pct: float, funding_rate: float, volume_24h: float
+    ) -> str:
         if change_pct >= 3 and funding_rate > 0.0001:
             return "偏多升温"
         if change_pct <= -3 and funding_rate < -0.0001:

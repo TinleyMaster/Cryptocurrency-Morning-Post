@@ -11,7 +11,9 @@ class FakeResponse:
     ) -> None:
         self._payload = payload
         self.status_code = status_code
-        self.text = text if text is not None else ("" if payload is None else str(payload))
+        self.text = (
+            text if text is not None else ("" if payload is None else str(payload))
+        )
         self._raises_json = raises_json
 
     def json(self):  # noqa: ANN201
@@ -133,5 +135,42 @@ def test_dwellir_client_falls_back_to_public_info_endpoint(monkeypatch):
 
     monitor = client.get_hyperliquid_market_monitor()
 
-    assert "已自动回退官方 Hyperliquid endpoint" in monitor.summary
+    assert "official Hyperliquid endpoint" in monitor.summary
+    assert monitor.markets[0].symbol == "BTC"
+
+
+def test_dwellir_client_falls_back_on_type_not_allowed(monkeypatch):
+    def fake_post(self, url, headers=None, json=None, timeout=None):  # noqa: ANN001
+        if url == "https://api-hyperliquid-mainnet-info.n.dwellir.com/info":
+            return FakeResponse(
+                payload={"error": "type not allowed"},
+                status_code=403,
+            )
+        assert url == "https://api.hyperliquid.xyz/info"
+        if json["type"] == "metaAndAssetCtxs":
+            return FakeResponse(
+                [
+                    {"universe": [{"name": "BTC"}]},
+                    [
+                        {
+                            "dayNtlVlm": "1200000000",
+                            "funding": "0.00012",
+                            "openInterest": "12000",
+                            "prevDayPx": "100000",
+                            "markPx": "102000",
+                        }
+                    ],
+                ]
+            )
+        return FakeResponse({"BTC": "102000"})
+
+    monkeypatch.setattr("requests.sessions.Session.post", fake_post)
+    client = DwellirClient(
+        api_key="test-key",
+        market_config={"dwellir": {"hyperliquid": {"symbols": ["BTC"]}}},
+    )
+
+    monitor = client.get_hyperliquid_market_monitor()
+
+    assert "official Hyperliquid endpoint" in monitor.summary
     assert monitor.markets[0].symbol == "BTC"
