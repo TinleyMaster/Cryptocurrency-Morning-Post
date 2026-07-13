@@ -22,6 +22,7 @@ from app.models.market import (
 
 class DefiLlamaClient:
     BASE_URL = "https://api.llama.fi"
+    STABLECOINS_BASE_URL = "https://stablecoins.llama.fi"
     LIQUIDATION_NOTE_KEY = "24h 清算总额需配置 COINGLASS_API_KEY"
 
     def __init__(
@@ -41,8 +42,12 @@ class DefiLlamaClient:
 
         protocols = self._request_list(f"{self.BASE_URL}/protocols")
         chains = self._request_list(f"{self.BASE_URL}/v2/chains")
-        stablecoins_payload = self._request_dict(f"{self.BASE_URL}/stablecoins")
-        stablecoin_chains = self._request_list(f"{self.BASE_URL}/stablecoinchains")
+        stablecoins_payload = self._request_dict(
+            f"{self.STABLECOINS_BASE_URL}/stablecoins"
+        )
+        stablecoin_chains = self._request_list(
+            f"{self.STABLECOINS_BASE_URL}/stablecoinchains"
+        )
         dexs_overview = self._request_dict(
             f"{self.BASE_URL}/overview/dexs"
             "?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true"
@@ -108,7 +113,9 @@ class DefiLlamaClient:
                     name=item["name"],
                     tvl=self._format_money(item["tvl"]),
                     change_7d=self._format_percent(item["change_7d"]),
-                    change_amount_7d=self._format_signed_money(item["change_7d_amount"]),
+                    change_amount_7d=self._format_signed_money(
+                        item["change_7d_amount"]
+                    ),
                     signal=item["signal"],
                 )
                 for item in chain_rows
@@ -181,9 +188,7 @@ class DefiLlamaClient:
             tvl_change_1d=change_1d,
             dex_volume_change_7d=dex_volume_change_7d,
         )
-        attribution_note = (
-            "TVL 1d/7d 变化包含币价波动，当前免费口径更适合看方向和强弱，不适合直接等同为真实资金净流入/流出。"
-        )
+        attribution_note = "TVL 1d/7d 变化包含币价波动，当前免费口径更适合看方向和强弱，不适合直接等同为真实资金净流入/流出。"
         summary = (
             f"稳定币总市值 {self._format_money(stablecoin_mcap)}，"
             f"全网 TVL 24h 变化 {self._format_signed_money(change_1d)}，"
@@ -265,20 +270,32 @@ class DefiLlamaClient:
                 for item in chains
                 if isinstance(item, dict)
                 and item.get("name")
-                and float(item.get("totalCirculating") or 0) > 0
+                and self._extract_stablecoin_amount(
+                    item.get("totalCirculatingUSD"),
+                    item.get("totalCirculating"),
+                )
+                > 0
             ),
-            key=lambda item: float(item.get("totalCirculating") or 0),
+            key=lambda item: self._extract_stablecoin_amount(
+                item.get("totalCirculatingUSD"),
+                item.get("totalCirculating"),
+            ),
             reverse=True,
         )[:limit]
         rows: list[dict[str, Any]] = []
         for item in selected:
             chain = item.get("name", "")
             history = self._request_list(
-                f"{self.BASE_URL}/stablecoincharts/{quote(chain, safe='')}"
+                f"{self.STABLECOINS_BASE_URL}/stablecoincharts/{quote(chain, safe='')}"
             )
-            current = float(item.get("totalCirculating") or 0)
+            current = self._extract_stablecoin_amount(
+                item.get("totalCirculatingUSD"),
+                item.get("totalCirculating"),
+            )
             baseline = self._baseline_from_stablecoin_history(history, days=7)
-            change_7d = self._compute_change_from_values(current=current, baseline=baseline)
+            change_7d = self._compute_change_from_values(
+                current=current, baseline=baseline
+            )
             rows.append(
                 {
                     "chain": chain,
@@ -300,13 +317,17 @@ class DefiLlamaClient:
             return f"稳定币增量仍集中在 {positive[0]['chain']}，扩散尚不充分。"
         return "主流链稳定币规模多数回落，新增弹药仍显不足。"
 
-    def _build_dex_chain_rows(self, chains: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _build_dex_chain_rows(
+        self, chains: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         limit = int(self.market_config.get("defillama", {}).get("dex_chain_limit", 3))
         selected = sorted(
             (
                 item
                 for item in chains
-                if isinstance(item, dict) and item.get("name") and float(item.get("tvl") or 0) > 0
+                if isinstance(item, dict)
+                and item.get("name")
+                and float(item.get("tvl") or 0) > 0
             ),
             key=lambda item: float(item.get("tvl") or 0),
             reverse=True,
@@ -611,7 +632,22 @@ class DefiLlamaClient:
         history: list[dict[str, Any]], days: int
     ) -> float:
         baseline_index = max(0, len(history) - 1 - days)
-        return float(history[baseline_index].get("totalCirculating") or 0)
+        row = history[baseline_index]
+        return DefiLlamaClient._extract_stablecoin_amount(
+            row.get("totalCirculatingUSD"),
+            row.get("totalCirculating"),
+        )
+
+    @staticmethod
+    def _extract_stablecoin_amount(*candidates: Any) -> float:
+        for candidate in candidates:
+            if isinstance(candidate, (int, float)):
+                return float(candidate)
+            if isinstance(candidate, dict):
+                value = candidate.get("peggedUSD")
+                if isinstance(value, (int, float)):
+                    return float(value)
+        return 0.0
 
     @staticmethod
     def _baseline_from_change(current: float, pct_change: float) -> float:

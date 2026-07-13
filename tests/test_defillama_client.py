@@ -119,7 +119,7 @@ def test_defillama_client_builds_monitor_snapshot(monkeypatch):
                 "change_7d": -2.0,
             },
         ],
-        "https://api.llama.fi/stablecoins": {
+        "https://stablecoins.llama.fi/stablecoins": {
             "peggedAssets": [
                 {
                     "symbol": "USDT",
@@ -163,27 +163,27 @@ def test_defillama_client_builds_monitor_snapshot(monkeypatch):
                 },
             ]
         },
-        "https://api.llama.fi/stablecoinchains": [
-            {"name": "Ethereum", "totalCirculating": 100_000_000_000},
-            {"name": "Tron", "totalCirculating": 55_000_000_000},
-            {"name": "Solana", "totalCirculating": 12_000_000_000},
-            {"name": "Base", "totalCirculating": 8_000_000_000},
+        "https://stablecoins.llama.fi/stablecoinchains": [
+            {"name": "Ethereum", "totalCirculatingUSD": {"peggedUSD": 100_000_000_000}},
+            {"name": "Tron", "totalCirculatingUSD": {"peggedUSD": 55_000_000_000}},
+            {"name": "Solana", "totalCirculatingUSD": {"peggedUSD": 12_000_000_000}},
+            {"name": "Base", "totalCirculatingUSD": {"peggedUSD": 8_000_000_000}},
         ],
-        "https://api.llama.fi/stablecoincharts/Ethereum": [
-            {"date": 1, "totalCirculating": 95_000_000_000},
-            {"date": 8, "totalCirculating": 100_000_000_000},
+        "https://stablecoins.llama.fi/stablecoincharts/Ethereum": [
+            {"date": 1, "totalCirculatingUSD": {"peggedUSD": 95_000_000_000}},
+            {"date": 8, "totalCirculatingUSD": {"peggedUSD": 100_000_000_000}},
         ],
-        "https://api.llama.fi/stablecoincharts/Tron": [
-            {"date": 1, "totalCirculating": 56_000_000_000},
-            {"date": 8, "totalCirculating": 55_000_000_000},
+        "https://stablecoins.llama.fi/stablecoincharts/Tron": [
+            {"date": 1, "totalCirculatingUSD": {"peggedUSD": 56_000_000_000}},
+            {"date": 8, "totalCirculatingUSD": {"peggedUSD": 55_000_000_000}},
         ],
-        "https://api.llama.fi/stablecoincharts/Solana": [
-            {"date": 1, "totalCirculating": 10_000_000_000},
-            {"date": 8, "totalCirculating": 12_000_000_000},
+        "https://stablecoins.llama.fi/stablecoincharts/Solana": [
+            {"date": 1, "totalCirculatingUSD": {"peggedUSD": 10_000_000_000}},
+            {"date": 8, "totalCirculatingUSD": {"peggedUSD": 12_000_000_000}},
         ],
-        "https://api.llama.fi/stablecoincharts/Base": [
-            {"date": 1, "totalCirculating": 7_500_000_000},
-            {"date": 8, "totalCirculating": 8_000_000_000},
+        "https://stablecoins.llama.fi/stablecoincharts/Base": [
+            {"date": 1, "totalCirculatingUSD": {"peggedUSD": 7_500_000_000}},
+            {"date": 8, "totalCirculatingUSD": {"peggedUSD": 8_000_000_000}},
         ],
         "https://api.llama.fi/summary/fees/lido?dataType=dailyFees": {
             "total24h": 3_000_000
