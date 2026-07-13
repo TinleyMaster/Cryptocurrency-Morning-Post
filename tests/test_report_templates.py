@@ -77,7 +77,12 @@ def test_deepread_template_renders_analysis_sections():
                     "vocabulary": ["Bitcoin：比特币"],
                     "text": "Bitcoin adoption keeps accelerating.",
                     "translation_note": "",
-                    "sentence_pairs": [{"en": "Bitcoin adoption keeps accelerating.", "cn": "比特币采用仍在加速。"}],
+                    "sentence_pairs": [
+                        {
+                            "en": "Bitcoin adoption keeps accelerating.",
+                            "cn": "比特币采用仍在加速。",
+                        }
+                    ],
                     "ai_summary": ["这是测试摘要。"],
                     "logic_structure": ["先给判断", "再给依据", "最后落到跟踪变量"],
                     "extended_thoughts": ["适合继续观察机构叙事。"],

@@ -72,15 +72,29 @@ class MarketService:
         snapshot = self._get_market_snapshot()
         defillama_monitor = self._get_defillama_monitor()
         helius_monitor, helius_state = self._get_helius_monitor()
-        dwellir_monitor = self._get_dwellir_monitor()
+        raw_dwellir_monitor = self._get_dwellir_monitor()
+        dwellir_monitor = self._normalize_dwellir_monitor(raw_dwellir_monitor)
         narratives = self._get_trending_narratives()
         top_coins = self._get_top_coins()
         whales = self._get_whale_observations()
+        investment_view = self._build_investment_view(
+            snapshot=snapshot,
+            defillama=defillama_monitor,
+            helius=helius_monitor,
+            dwellir=dwellir_monitor,
+        )
+        data_quality_notes = self._build_data_quality_notes(
+            defillama=defillama_monitor,
+            dwellir=raw_dwellir_monitor,
+            whales=whales,
+        )
         title = f"{report_date_str(now_dt)} 加密市场早报"
         context = {
             "title": title,
             "generated_at": now_dt.strftime("%Y-%m-%d %H:%M:%S"),
-            "one_liner": "市场仍处于可观察、可跟踪的阶段，但还不是适合激进加杠杆的时点。",
+            "one_liner": investment_view["one_liner"],
+            "investment_view": investment_view,
+            "data_quality_notes": data_quality_notes,
             "snapshot": snapshot,
             "defillama": defillama_monitor,
             "helius": helius_monitor,
@@ -407,6 +421,185 @@ class MarketService:
                 markets=[],
                 summary=f"Dwellir Hyperliquid 数据暂不可用：{exc}",
             )
+
+    @staticmethod
+    def _normalize_dwellir_monitor(
+        monitor: DwellirHyperliquidMonitor,
+    ) -> DwellirHyperliquidMonitor:
+        marker = (
+            "Dwellir Info Endpoint rejected this request type; "
+            "automatically fell back to the official Hyperliquid endpoint."
+        )
+        if marker not in monitor.summary:
+            return monitor
+        summary = monitor.summary.replace(marker, "").replace("  ", " ").strip()
+        return replace(monitor, summary=summary)
+
+    def _build_investment_view(
+        self,
+        snapshot: MarketSnapshot,
+        defillama: DefiLlamaMonitor,
+        helius: HeliusSolanaMonitor,
+        dwellir: DwellirHyperliquidMonitor,
+    ) -> dict[str, str]:
+        stablecoin_change_7d = self._parse_percent(
+            defillama.overview.stablecoin_change_7d
+        )
+        dex_change_7d = self._parse_percent(defillama.overview.dex_volume_change_7d)
+        oi_change_1d = self._parse_percent(
+            defillama.open_interest_overview.change_1d
+            if defillama.open_interest_overview
+            else "-"
+        )
+        options_change_1d = self._parse_percent(
+            defillama.options_overview.change_1d if defillama.options_overview else "-"
+        )
+        positive_stablecoin_chains = sum(
+            1
+            for item in defillama.stablecoin_chain_flows
+            if self._parse_percent(item.change_7d) > 0
+        )
+        positive_dex_chains = sum(
+            1
+            for item in defillama.dex_chain_flows
+            if self._parse_percent(item.change_7d) > 0
+        )
+        positive_fee_protocols = sum(
+            1
+            for item in defillama.top_fee_protocols
+            if self._parse_money(item.revenue_24h) > 0
+        )
+
+        if (
+            stablecoin_change_7d > 0
+            and positive_stablecoin_chains >= 2
+            and positive_dex_chains >= 2
+        ):
+            narrative = "稳定币增量与链上成交出现局部扩散，但目前仍是结构性轮动，还没进入全面 risk-on。"
+        elif stablecoin_change_7d > 0:
+            narrative = "稳定币总量仍在小幅扩张，但增量更多表现为局部迁移，风险偏好修复并不均衡。"
+        else:
+            narrative = (
+                "稳定币没有形成有效增量，当前更像存量资金在主流链和防守板块之间切换。"
+            )
+
+        if positive_fee_protocols >= 3:
+            earnings = "手续费与收入仍集中在少数头部协议，说明现金流修复存在，但没有扩散到更广的 DeFi 板块。"
+        else:
+            earnings = "协议层面的盈利修复还不扎实，更多是个别头部项目承接，而不是行业普遍改善。"
+
+        if oi_change_1d < 0 and options_change_1d < 0:
+            trading = (
+                "杠杆和波动交易同步降温，短线更适合观察结构，不适合追击方向和加杠杆。"
+            )
+        elif oi_change_1d > 0 and options_change_1d > 0 and dex_change_7d > 0:
+            trading = "现货活跃、杠杆和波动交易同步回暖，短线风险偏好在修复，但仍要防止情绪过热。"
+        else:
+            trading = "交易层面仍偏分化，现货活跃度和衍生品温度没有形成统一共振。"
+
+        if stablecoin_change_7d > 0 and (oi_change_1d <= 0 or options_change_1d <= 0):
+            position = "仓位上维持轻仓、低杠杆，优先主流资产与高流动性链，等待资金扩散更明确再提风险。"
+            one_liner = "资金没有明显离场，但修复仍偏局部；现阶段更适合轻仓跟踪主流链与头部协议。"
+        elif stablecoin_change_7d > 0 and oi_change_1d > 0 and options_change_1d > 0:
+            position = (
+                "可以保留核心仓位并小幅试错高流动性方向，但不宜脱离主流链和主流资产。"
+            )
+            one_liner = (
+                "资金与交易温度同步修复，可保留核心仓位，但还没到无差别进攻的时候。"
+            )
+        else:
+            position = (
+                "继续以防守型仓位管理为主，降低题材追价冲动，把流动性放在第一位。"
+            )
+            one_liner = (
+                "增量资金不足，当前更像存量博弈阶段，仓位上应优先防守而不是抢反弹。"
+            )
+
+        if (
+            snapshot.sentiment != "-"
+            and "Fear" in snapshot.sentiment
+            and "防守" not in position
+        ):
+            position = f"{position} 情绪仍偏恐慌，仓位节奏上不宜过快。"
+
+        if (
+            helius.protocol_priority_summary != "-"
+            and "明显升温" in helius.protocol_priority_summary
+            and "高流动性链" in position
+        ):
+            trading = f"{trading} Solana 局部链上拥堵已有抬头，短线热点切换会更快。"
+
+        if (
+            dwellir.breadth != "-"
+            and "上涨 1/" in dwellir.breadth
+            and "全面" in narrative
+        ):
+            narrative = "稳定币与链上成交出现局部扩散，但价格宽度仍不足，叙事还停留在结构性轮动阶段。"
+
+        return {
+            "one_liner": one_liner,
+            "narrative": narrative,
+            "earnings": earnings,
+            "trading": trading,
+            "position": position,
+        }
+
+    def _build_data_quality_notes(
+        self,
+        defillama: DefiLlamaMonitor,
+        dwellir: DwellirHyperliquidMonitor,
+        whales: list[WhaleObservation],
+    ) -> list[str]:
+        notes: list[str] = []
+        if "COINGLASS_API_KEY" in defillama.overview.liquidation_note:
+            notes.append(
+                "清算总额仍缺 CoinGlass 官方密钥，杠杆压力判断只能作为弱参考。"
+            )
+        if "official Hyperliquid endpoint" in dwellir.summary:
+            notes.append(
+                "Dwellir 代理当前不支持目标 Hyperliquid 请求类型，本期已自动回退官方 endpoint。"
+            )
+        if whales and "Dune 数据暂不可用" in whales[0].interpretation:
+            notes.append(
+                "巨鲸观察当前缺少 Dune 官方密钥，链上大额异动只覆盖到降级说明。"
+            )
+        if defillama.overview.summary.startswith("DefiLlama 资金监控数据暂不可用"):
+            notes.append("DefiLlama 资金模块存在缺口，当期资金面判断可信度下降。")
+        if not notes:
+            notes.append("主要市场链路可用；未见会明显影响主结论的关键数据缺口。")
+        return notes
+
+    @staticmethod
+    def _parse_percent(value: str) -> float:
+        if not value or value == "-":
+            return 0.0
+        normalized = value.replace("%", "").replace("+", "")
+        try:
+            return float(normalized)
+        except ValueError:
+            return 0.0
+
+    @staticmethod
+    def _parse_money(value: str) -> float:
+        if not value or value == "-":
+            return 0.0
+        normalized = value.replace("$", "").replace(",", "")
+        multiplier = 1.0
+        if normalized.endswith("B"):
+            multiplier = 1_000_000_000
+            normalized = normalized[:-1]
+        elif normalized.endswith("M"):
+            multiplier = 1_000_000
+            normalized = normalized[:-1]
+        elif normalized.endswith("K"):
+            multiplier = 1_000
+            normalized = normalized[:-1]
+        elif normalized.endswith("x"):
+            normalized = normalized[:-1]
+        try:
+            return float(normalized) * multiplier
+        except ValueError:
+            return 0.0
 
     def _build_summary_markdown(
         self,

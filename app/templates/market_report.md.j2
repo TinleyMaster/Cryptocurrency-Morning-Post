@@ -1,11 +1,24 @@
 # {{ title }}
 
 > 生成时间：`{{ generated_at }}`
-> 数据说明：当前为云上脚手架样例输出，后续将替换为真实 API 数据
+> 数据口径：当前为免费接口版市场监控，方向判断优先于精确归因；若个别官方密钥缺失，将在文中单列说明。
 
 ## 今日一句话
 
 - {{ one_liner }}
+
+## 四分法判断
+
+- 叙事判断：{{ investment_view.narrative }}
+- 业绩判断：{{ investment_view.earnings }}
+- 交易判断：{{ investment_view.trading }}
+- 仓位判断：{{ investment_view.position }}
+
+## 数据质量说明
+
+{% for note in data_quality_notes -%}
+- {{ note }}
+{% endfor %}
 
 ## 今日大盘概览
 
